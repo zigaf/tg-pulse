@@ -1,27 +1,13 @@
 import { Bot } from 'grammy';
 import { getPrisma, BotStatus, EventType, Attribution } from '@tgpulse/db';
 import { config } from './config';
+import { hasSubscribers, notifyMemberEvent } from './notifications';
+import { texts } from './texts';
 
 export const bot = new Bot(config.botToken);
 const prisma = getPrisma();
 
 // ---------- Onboarding ----------
-
-bot.command('start', async (ctx) => {
-  await ctx.reply(
-    [
-      'Hi! I am TGPulse, a subscriber source tracker for Telegram channels.',
-      '',
-      'Get started:',
-      '1. Add me as an admin to your channel (the "invite users via link" permission is enough)',
-      '2. The channel connects automatically',
-      '3. Run /newlink to create a tracking link for an ad or a post',
-      '4. Run /stats to see joins, leaves and top sources for the last 7 days',
-      '',
-      'You also get a daily report every morning at 09:00 UTC.',
-    ].join('\n'),
-  );
-});
 
 // Bot's own status in a channel changed (added/removed as admin)
 bot.on('my_chat_member', async (ctx) => {
@@ -31,11 +17,18 @@ bot.on('my_chat_member', async (ctx) => {
   const newStatus = ctx.myChatMember.new_chat_member.status;
   const isAdmin = newStatus === 'administrator';
 
+  // Baseline of real channel size: dynamics are tracked as events on top of it
+  const memberCount = isAdmin ? await ctx.api.getChatMemberCount(chat.id).catch(() => null) : null;
+
   const existing = await prisma.channel.findUnique({ where: { tgChatId: BigInt(chat.id) } });
   if (existing) {
     await prisma.channel.update({
       where: { id: existing.id },
-      data: { botStatus: isAdmin ? BotStatus.ACTIVE : BotStatus.REMOVED, title: chat.title ?? existing.title },
+      data: {
+        botStatus: isAdmin ? BotStatus.ACTIVE : BotStatus.REMOVED,
+        title: chat.title ?? existing.title,
+        ...(memberCount !== null ? { memberCount, memberCountAt: new Date() } : {}),
+      },
     });
     return;
   }
@@ -76,12 +69,13 @@ bot.on('my_chat_member', async (ctx) => {
       username: 'username' in chat ? chat.username : undefined,
       workspaceId: membership.workspaceId,
       botStatus: BotStatus.ACTIVE,
+      ...(memberCount !== null ? { memberCount, memberCountAt: new Date() } : {}),
     },
   });
 
   await bot.api.sendMessage(
     from.id,
-    `Channel "${chat.title}" is connected. Create your first tracking link: /newlink`,
+    texts.onboarding.channelConnected(chat.title ?? 'Channel'),
   ).catch(() => {
     // user may not have started the bot in DM — fine, they'll see the channel in the dashboard
   });
@@ -143,6 +137,9 @@ bot.on('chat_member', async (ctx) => {
     await prisma.memberEvent.create({
       data: { channelId: channel.id, tgUserId, type: EventType.JOIN, linkId: link?.id, ts: now },
     });
+
+    // Instant alerts for opted-in users; never blocks attribution handling
+    void notifyMemberEvent(bot.api, channel, EventType.JOIN, link?.label ?? texts.sources.organic);
   } else {
     // LEAVE
     const sub = await prisma.subscriber.findUnique({
@@ -154,5 +151,13 @@ bot.on('chat_member', async (ctx) => {
     await prisma.memberEvent.create({
       data: { channelId: channel.id, tgUserId, type: EventType.LEAVE, linkId: sub?.linkId, ts: now },
     });
+
+    // Instant alerts for opted-in users; never blocks attribution handling
+    if (hasSubscribers(channel.id)) {
+      const sourceLink = sub?.linkId
+        ? await prisma.trackedLink.findUnique({ where: { id: sub.linkId }, select: { label: true } })
+        : null;
+      void notifyMemberEvent(bot.api, channel, EventType.LEAVE, sourceLink?.label ?? texts.sources.organic);
+    }
   }
 });

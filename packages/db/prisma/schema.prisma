@@ -67,6 +67,9 @@ model Channel {
   username    String? // public @username if any
   workspaceId String        @map("workspace_id")
   botStatus   BotStatus     @default(PENDING) @map("bot_status")
+  /** Real channel size from getChatMemberCount; synced on connect and periodically. */
+  memberCount   Int?      @map("member_count")
+  memberCountAt DateTime? @map("member_count_at")
   createdAt   DateTime      @default(now()) @map("created_at")
   workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   links       TrackedLink[]

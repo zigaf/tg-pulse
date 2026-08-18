@@ -1,10 +1,11 @@
 import { randomBytes } from 'node:crypto';
-import { GrammyError, InlineKeyboard, type Bot } from 'grammy';
+import { GrammyError, type Bot, type Context } from 'grammy';
 import { getPrisma, BotStatus } from '@tgpulse/db';
 import { config } from '../config';
-import { escapeHtml } from '../format';
-import { getUserActiveChannels } from '../queries';
+import { CB, cancelMenu, channelPickerMenu, postCreateMenu } from '../menus';
+import { getUserActiveChannels, getUserChannel } from '../queries';
 import { clearState, getState, setState } from '../state';
+import { texts } from '../texts';
 
 const prisma = getPrisma();
 
@@ -17,51 +18,52 @@ function generateSlug(): string {
   return randomBytes(6).toString('base64url').slice(0, SLUG_LENGTH);
 }
 
+/** Entry point of the flow: channel picker or onboarding hint. Used by /newlink and callbacks. */
+export async function startNewlinkFlow(ctx: Context, tgUserId: number): Promise<void> {
+  const channels = await getUserActiveChannels(tgUserId);
+  if (channels.length === 0) {
+    await ctx.reply(texts.common.noChannels);
+    return;
+  }
+  await ctx.reply(texts.newlink.pickChannel, { reply_markup: channelPickerMenu(channels) });
+}
+
 export function registerNewlink(bot: Bot): void {
   bot.command('newlink', async (ctx) => {
     if (ctx.chat.type !== 'private' || !ctx.from) return;
-
-    const channels = await getUserActiveChannels(ctx.from.id);
-    if (channels.length === 0) {
-      await ctx.reply(
-        [
-          'No channels connected yet.',
-          '',
-          'Add me as an admin to your channel (the "invite users via link" permission is enough), then run /newlink again.',
-        ].join('\n'),
-      );
-      return;
-    }
-
-    const keyboard = new InlineKeyboard();
-    for (const channel of channels) {
-      keyboard.text(channel.title, `nl:${channel.id}`).row();
-    }
-    await ctx.reply('Pick a channel for the new tracking link:', { reply_markup: keyboard });
+    await startNewlinkFlow(ctx, ctx.from.id);
   });
 
-  bot.callbackQuery(/^nl:(.+)$/, async (ctx) => {
-    const channelId = ctx.match[1];
+  bot.callbackQuery(CB.goNewlink, async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await startNewlinkFlow(ctx, ctx.from.id);
+  });
 
-    // Re-verify access: the button could be stale or forwarded.
-    const channels = await getUserActiveChannels(ctx.from.id);
-    const channel = channels.find((c) => c.id === channelId);
-    if (!channel || channel.botStatus !== BotStatus.ACTIVE) {
-      await ctx.answerCallbackQuery({ text: 'This channel is not available anymore.' });
+  // Channel picked (from the picker or from the /channels menu) -> ask for a label
+  bot.callbackQuery(/^nl:pick:(.+)$/, async (ctx) => {
+    const channel = await getUserChannel(ctx.from.id, ctx.match[1]);
+    if (!channel) {
+      await ctx.answerCallbackQuery({ text: texts.common.channelUnavailable });
       return;
     }
 
     setState(ctx.from.id, { step: 'awaiting_label', channelId: channel.id });
     await ctx.answerCallbackQuery();
-    await ctx.editMessageText(
-      [
-        `Channel: ${channel.title}`,
-        '',
-        'Send a label for this link (e.g. "seeding @channel, June 20")',
-      ].join('\n'),
-    );
+    await ctx.editMessageText(texts.newlink.askLabel(channel.title), {
+      parse_mode: 'HTML',
+      reply_markup: cancelMenu(),
+    });
   });
 
+  bot.callbackQuery(CB.nlCancel, async (ctx) => {
+    clearState(ctx.from.id);
+    await ctx.answerCallbackQuery();
+    await ctx.editMessageText(texts.newlink.cancelled).catch(() => {
+      // message may be too old to edit; the state is cleared either way
+    });
+  });
+
+  // Label received -> create the invite link and the TrackedLink
   bot.on('message:text', async (ctx, next) => {
     if (ctx.chat.type !== 'private' || ctx.message.text.startsWith('/')) return next();
 
@@ -70,14 +72,14 @@ export function registerNewlink(bot: Bot): void {
 
     const label = ctx.message.text.trim();
     if (!label) {
-      await ctx.reply('Label cannot be empty. Send a short name for this link.');
+      await ctx.reply(texts.newlink.emptyLabel, { reply_markup: cancelMenu() });
       return;
     }
 
     const channel = await prisma.channel.findUnique({ where: { id: state.channelId } });
     if (!channel || channel.botStatus !== BotStatus.ACTIVE) {
       clearState(ctx.from.id);
-      await ctx.reply('That channel is no longer available. Start over with /newlink.');
+      await ctx.reply(texts.newlink.channelGone);
       return;
     }
 
@@ -90,9 +92,7 @@ export function registerNewlink(bot: Bot): void {
     } catch (error) {
       clearState(ctx.from.id);
       const description = error instanceof GrammyError ? error.description : 'unexpected error';
-      await ctx.reply(
-        `Failed to create invite link: ${description}. Check that the bot is still an admin in "${channel.title}".`,
-      );
+      await ctx.reply(texts.newlink.createFailed(description, channel.title));
       return;
     }
 
@@ -100,22 +100,27 @@ export function registerNewlink(bot: Bot): void {
     clearState(ctx.from.id);
 
     if (!trackedLink) {
-      await ctx.reply('Failed to save the link. Please try /newlink again.');
+      await ctx.reply(texts.newlink.saveFailed);
       return;
     }
 
-    const goUrl = `${config.goBaseUrl}/l/${trackedLink.slug}`;
+    const sourceCount = await prisma.trackedLink.count({
+      where: { channelId: channel.id, isRevoked: false },
+    });
+
     await ctx.reply(
-      [
-        `Link created for <b>${escapeHtml(channel.title)}</b>`,
-        '',
-        `Label: ${escapeHtml(label)}`,
-        `Tracking URL: <code>${escapeHtml(goUrl)}</code>`,
-        `Invite link: <code>${escapeHtml(inviteLink)}</code>`,
-        '',
-        'Share the tracking URL in your ads and posts. Clicks and joins through it are attributed to this label. See results with /stats.',
-      ].join('\n'),
-      { parse_mode: 'HTML', link_preview_options: { is_disabled: true } },
+      texts.newlink.created({
+        title: channel.title,
+        label,
+        goUrl: `${config.goBaseUrl}/l/${trackedLink.slug}`,
+        inviteLink,
+        sourceCount,
+      }),
+      {
+        parse_mode: 'HTML',
+        link_preview_options: { is_disabled: true },
+        reply_markup: postCreateMenu(),
+      },
     );
   });
 }

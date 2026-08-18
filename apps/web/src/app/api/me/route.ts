@@ -36,7 +36,8 @@ export async function GET(req: NextRequest) {
         title: channel.title,
         username: channel.username,
         botStatus: channel.botStatus,
-        subscriberCount: channel._count.subscribers,
+        // Real channel size when synced; falls back to tracked-only count
+        subscriberCount: channel.memberCount ?? channel._count.subscribers,
       })),
     }));
 

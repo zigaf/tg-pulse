@@ -3,14 +3,26 @@ import { webhookCallback } from 'grammy';
 import { createHash } from 'node:crypto';
 import { getPrisma } from '@tgpulse/db';
 import { bot } from './bot';
+import { registerChannels } from './commands/channels';
+import { registerHelp } from './commands/help';
 import { registerNewlink } from './commands/newlink';
+import { registerNotifications } from './commands/notifications';
+import { registerStart } from './commands/start';
 import { registerStats } from './commands/stats';
 import { config } from './config';
+import { registerFallback } from './fallback';
 import { registerReports, startReportCron } from './reports';
+import { startMemberCountSync } from './sync';
+import { texts } from './texts';
 
-registerNewlink(bot);
+registerStart(bot);
+registerHelp(bot);
+registerChannels(bot);
+registerNotifications(bot);
 registerStats(bot);
+registerNewlink(bot);
 registerReports(bot);
+registerFallback(bot); // must be last: unknown-input hints + catch-all callback answer + bot.catch
 
 const app = Fastify({ logger: true });
 const prisma = getPrisma();
@@ -58,6 +70,15 @@ async function main() {
   await app.listen({ port: config.port, host: '0.0.0.0' });
 
   startReportCron();
+  startMemberCountSync(bot);
+
+  await bot.api.setMyCommands([
+    { command: 'start', description: texts.commands.start },
+    { command: 'newlink', description: texts.commands.newlink },
+    { command: 'stats', description: texts.commands.stats },
+    { command: 'channels', description: texts.commands.channels },
+    { command: 'help', description: texts.commands.help },
+  ]);
 
   if (config.webhookSecret && config.publicUrl) {
     await bot.api.setWebhook(`${config.publicUrl}/webhook/${config.webhookSecret}`, {

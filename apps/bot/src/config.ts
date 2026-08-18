@@ -21,4 +21,6 @@ export const config = {
   port: Number(process.env.PORT ?? 8080),
   /** Base URL for tracking links (go-redirect). Falls back to PUBLIC_URL, then localhost. */
   goBaseUrl: stripTrailingSlash(process.env.GO_BASE_URL ?? (publicUrl || 'http://localhost:8080')),
+  /** Web dashboard URL used in bot buttons and help texts. */
+  dashboardUrl: process.env.DASHBOARD_URL ?? 'https://web-production-1001b.up.railway.app/app',
 };
