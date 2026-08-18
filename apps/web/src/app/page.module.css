@@ -89,23 +89,6 @@
     radial-gradient(ellipse 45% 35% at 50% 30%, oklch(30% 0.12 288 / 0.25), transparent 70%);
 }
 
-/* Raw attribution strings as background texture instead of a decorative word */
-.heroBackdrop {
-  position: absolute;
-  inset: clamp(4rem, 3rem + 3vw, 6rem) 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1.4rem;
-  font-family: var(--font-mono), monospace;
-  font-size: clamp(0.75rem, 0.6rem + 0.6vw, 1.05rem);
-  color: oklch(60% 0.08 288 / 0.6);
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-  mask-image: radial-gradient(ellipse 75% 65% at 50% 40%, black 25%, transparent 78%);
-  opacity: 0.35;
-}
-
 .heroContent {
   position: relative;
   max-width: 1140px;

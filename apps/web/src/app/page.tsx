@@ -1,3 +1,4 @@
+import { AttributionLog } from '@/components/hero/AttributionLog';
 import { AttributionStream } from '@/components/hero/AttributionStream';
 import { DeviceMockup } from '@/components/hero/DeviceMockup';
 import { SmoothScroll } from '@/components/providers/SmoothScroll';
@@ -8,16 +9,6 @@ import { FlowCurve } from '@/components/sections/FlowCurve';
 import { PainSection } from '@/components/sections/PainSection';
 import { PricingSection } from '@/components/sections/PricingSection';
 import styles from './page.module.css';
-
-/* Raw attribution strings for the hero backdrop: the product's data as texture. */
-const BACKDROP_ROWS = [
-  't.me/+8fj2kQ src=tgads creative=4 t.me/+k91xw src=seed@crypto_daily t.me/+m30aa src=meta lp=a',
-  'join 14:02 src=seed@crypto_daily join 14:02 src=tgads leave 14:07 src=seed@spam_gems',
-  't.me/+q77zn src=tgads creative=7 t.me/+p52dd src=seed@marketing_pro t.me/+r19cc src=meta lp=b',
-  'join 14:04 src=meta join 14:05 src=organic join 14:05 src=tgads creative=4',
-  't.me/+v83be src=seed@alpha_signals t.me/+w41gh src=tgads creative=2 t.me/+z66jk src=meta lp=a',
-  'join 14:08 src=seed@alpha_signals join 14:09 src=tgads leave 14:11 src=seed@spam_gems',
-];
 
 const FEATURES = [
   {
@@ -71,13 +62,7 @@ export default function LandingPage() {
         <main>
           {/* ---------- hero ---------- */}
           <section className={styles.hero} aria-labelledby="hero-heading">
-            <div className={styles.heroBackdrop} aria-hidden="true">
-              {BACKDROP_ROWS.map((row, i) => (
-                <span key={i} style={{ transform: `translateX(-${(i % 3) * 4 + 2}%)` }}>
-                  {row}
-                </span>
-              ))}
-            </div>
+            <AttributionLog />
 
             <div className={styles.heroContent}>
               <Reveal immediate>

@@ -25,6 +25,7 @@
 .segment {
   fill: none;
   stroke-width: 12;
+  stroke-linecap: round;
 }
 
 .value {

@@ -1,0 +1,90 @@
+.wrap {
+  position: absolute;
+  top: clamp(4.5rem, 3.5rem + 3vw, 6.5rem);
+  right: 0;
+  width: min(420px, 38vw);
+  height: 400px;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  /* fade all four edges: the stream lives in the hero's negative space */
+  mask-image:
+    linear-gradient(to bottom, transparent, black 18%, black 78%, transparent),
+    linear-gradient(to right, transparent, black 30%);
+  mask-composite: intersect;
+}
+
+.track {
+  display: flex;
+  flex-direction: column;
+  animation: log-drift 36s linear infinite;
+}
+
+@keyframes log-drift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.column {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+  padding-bottom: 1.05rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.9rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.time {
+  color: oklch(50% 0.02 290 / 0.55);
+}
+
+.event {
+  color: oklch(72% 0.015 290 / 0.55);
+}
+
+.src {
+  opacity: 0.75;
+}
+
+.tgads {
+  color: oklch(70% 0.14 240 / 0.75);
+}
+
+.meta {
+  color: oklch(78% 0.15 85 / 0.7);
+}
+
+.seeding {
+  color: oklch(68% 0.19 310 / 0.75);
+}
+
+.organic {
+  color: oklch(75% 0.13 165 / 0.7);
+}
+
+.negative {
+  color: oklch(65% 0.19 25 / 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    animation: none;
+  }
+}
+
+@media (max-width: 1000px) {
+  .wrap {
+    display: none;
+  }
+}

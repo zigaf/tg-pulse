@@ -3,8 +3,12 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import styles from './donut.module.css';
 
-/** Visual gap between segments, in pathLength units (0..100). */
-const SEGMENT_GAP = 1.6;
+/**
+ * Visual gap between segments, in pathLength units (0..100).
+ * Round line caps extend each arc end by ~2.4 units (half stroke width of 12
+ * on a r=40 circle), so the gap must cover 2 cap extensions plus breathing room.
+ */
+const SEGMENT_GAP = 6;
 
 /* sample data: share of subscriptions per source */
 const SEGMENTS = [
@@ -32,7 +36,10 @@ export function SourceDonut() {
         <circle cx="50" cy="50" r="40" className={styles.track} />
         <g transform="rotate(-90 50 50)">
           {SEGMENTS_WITH_START.map((segment, index) => {
-            const visible = Math.max(segment.pct - SEGMENT_GAP, 0.5);
+            // Center the visible arc inside its slice so gaps are symmetric;
+            // a tiny slice collapses into a clean round dot instead of a sliver.
+            const visible = Math.max(segment.pct - SEGMENT_GAP, 0.1);
+            const start = segment.start + (segment.pct - visible) / 2;
             return (
               <motion.circle
                 key={segment.colorVar}
@@ -40,13 +47,16 @@ export function SourceDonut() {
                 cy="50"
                 r="40"
                 pathLength={100}
-                strokeDashoffset={-segment.start}
+                strokeDashoffset={-start}
                 className={styles.segment}
                 style={{ stroke: `var(${segment.colorVar})` }}
-                initial={reduced ? false : { strokeDasharray: '0 100' }}
-                whileInView={{ strokeDasharray: `${visible} ${100 - visible}` }}
+                initial={reduced ? false : { strokeDasharray: `0.1 99.9`, opacity: 0 }}
+                whileInView={{ strokeDasharray: `${visible} ${100 - visible}`, opacity: 1 }}
                 viewport={{ once: true, amount: 0.6 }}
-                transition={{ duration: 0.9, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] }}
+                transition={{
+                  strokeDasharray: { duration: 0.9, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] },
+                  opacity: { duration: 0.2, delay: index * 0.15 },
+                }}
               />
             );
           })}
