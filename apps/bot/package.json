@@ -11,9 +11,11 @@
   "dependencies": {
     "@tgpulse/db": "*",
     "fastify": "^5.2.1",
-    "grammy": "^1.36.1"
+    "grammy": "^1.36.1",
+    "node-cron": "^4.6.0"
   },
   "devDependencies": {
+    "@types/node-cron": "^3.0.11",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }
