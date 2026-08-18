@@ -83,6 +83,19 @@ a {
   background: oklch(62% 0.21 288 / 0.4);
 }
 
+/* Mobile-first scale: native phone sizing, not shrunken desktop */
+@media (max-width: 700px) {
+  :root {
+    --text-hero: 2.15rem;
+    --text-h2: 1.55rem;
+    --space-section: 4rem;
+    --space-title-gap: 1.8rem;
+    --space-inner: 1.1rem;
+    --radius-xl: 20px;
+    --radius-lg: 14px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

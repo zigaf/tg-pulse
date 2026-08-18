@@ -43,21 +43,24 @@ export function PainSection() {
         Sound familiar?
       </motion.h2>
 
-      <div className={styles.grid}>
-        {PAINS.map(({ icon: Icon, title, body, cell }, i) => (
-          <motion.article
-            key={title}
-            className={`${styles.card} ${styles[cell]}`}
-            initial={reduce ? false : { opacity: 0, y: 32 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ duration: 0.7, delay: i * 0.12, ease: EASE }}
-          >
-            <Icon size={30} weight="duotone" className={styles.icon} aria-hidden="true" />
-            <h3 className={styles.cardTitle}>{title}</h3>
-            <p className={styles.cardBody}>{body}</p>
-          </motion.article>
-        ))}
+      {/* Shell hosts the mobile swipe-affordance fade on the right edge. */}
+      <div className={styles.carouselShell}>
+        <div className={styles.grid}>
+          {PAINS.map(({ icon: Icon, title, body, cell }, i) => (
+            <motion.article
+              key={title}
+              className={`${styles.card} ${styles[cell]}`}
+              initial={reduce ? false : { opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.4 }}
+              transition={{ duration: 0.7, delay: i * 0.12, ease: EASE }}
+            >
+              <Icon size={30} weight="duotone" className={styles.icon} aria-hidden="true" />
+              <h3 className={styles.cardTitle}>{title}</h3>
+              <p className={styles.cardBody}>{body}</p>
+            </motion.article>
+          ))}
+        </div>
       </div>
 
       <motion.p

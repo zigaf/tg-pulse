@@ -24,6 +24,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1.2rem;
+  min-height: 48px;
   padding-block: 1.25rem;
   cursor: pointer;
   list-style: none;
@@ -45,6 +46,8 @@
 }
 
 .question {
+  flex: 1;
+  min-width: 0;
   font-size: 1.02rem;
   font-weight: 500;
   letter-spacing: -0.01em;
@@ -68,4 +71,26 @@
   line-height: 1.6;
   color: var(--color-text-muted);
   max-width: 62ch;
+}
+
+/* Mobile-native sizing. */
+@media (max-width: 640px) {
+  .heading {
+    font-size: 1.6rem;
+    margin-bottom: 1.8rem;
+  }
+
+  .summary {
+    gap: 0.9rem;
+    padding-block: 1rem;
+  }
+
+  .question {
+    font-size: 0.95rem;
+  }
+
+  .answer {
+    font-size: 0.9rem;
+    padding-bottom: 1.1rem;
+  }
 }

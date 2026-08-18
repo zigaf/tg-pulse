@@ -11,6 +11,15 @@
   flex: none;
 }
 
+/* native mobile stage: own coordinate space, no scaled-down desktop */
+.stageMobile {
+  position: relative;
+  width: 300px;
+  height: 120px;
+  flex: none;
+  display: none;
+}
+
 .paths {
   position: absolute;
   inset: 0;
@@ -61,6 +70,10 @@
   white-space: nowrap;
   backdrop-filter: blur(10px);
   animation: chip-float 5s ease-in-out infinite;
+}
+
+.stageMobile .chip {
+  padding: 0.24rem 0.55rem;
 }
 
 @keyframes chip-float {
@@ -117,11 +130,9 @@
   }
 }
 
-/* landing splash rings at the convergence point (300, 132) */
+/* landing splash rings at the convergence point; center set inline per stage */
 .ring {
   position: absolute;
-  left: 289px;
-  top: 121px;
   width: 22px;
   height: 22px;
   border: 1px solid var(--color-accent-bright);
@@ -167,6 +178,17 @@
   animation: receiver-pulse 2.4s ease-in-out infinite;
 }
 
+/* full content width on the compact stage */
+.stageMobile .receiver {
+  left: 0;
+  right: 0;
+}
+
+.stageMobile .receiverGlow {
+  left: 15%;
+  right: 15%;
+}
+
 @keyframes receiver-pulse {
   0%,
   100% {
@@ -204,12 +226,10 @@
 }
 
 @media (max-width: 640px) {
-  .stream {
-    overflow: hidden;
-  }
   .stage {
-    transform: scale(0.55);
-    transform-origin: bottom center;
-    margin-top: -60px;
+    display: none;
+  }
+  .stageMobile {
+    display: block;
   }
 }

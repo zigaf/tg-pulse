@@ -112,3 +112,55 @@
     order: -1;
   }
 }
+
+/* Mobile: TGPulse keeps the full card and dominates; the two losing
+   columns collapse into quiet one-line "label / value" rows. */
+@media (max-width: 640px) {
+  .heading {
+    font-size: 1.6rem;
+    margin-bottom: 1.8rem;
+  }
+
+  .col {
+    padding: 1.2rem;
+  }
+
+  .col:not(.colHighlight) {
+    background: transparent;
+    opacity: 0.85;
+  }
+
+  .col:not(.colHighlight) .colName {
+    font-size: 0.88rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .col:not(.colHighlight) .row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-block: 0.5rem;
+  }
+
+  .col:not(.colHighlight) .rowLabel {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .col:not(.colHighlight) .rowValue {
+    font-size: 0.8rem;
+    text-align: right;
+    justify-content: flex-end;
+  }
+
+  .col:not(.colHighlight) .minusIcon {
+    margin-top: 0;
+    align-self: center;
+  }
+
+  .caption {
+    margin-top: 1.2rem;
+    font-size: 0.82rem;
+  }
+}

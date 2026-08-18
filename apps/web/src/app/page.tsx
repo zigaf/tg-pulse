@@ -1,8 +1,10 @@
 import { AttributionLog } from '@/components/hero/AttributionLog';
 import { AttributionStream } from '@/components/hero/AttributionStream';
 import { DeviceMockup } from '@/components/hero/DeviceMockup';
+import { MobileHeroVisual } from '@/components/hero/MobileHeroVisual';
 import { SmoothScroll } from '@/components/providers/SmoothScroll';
 import { Reveal } from '@/components/ui/Reveal';
+import { StickyCta } from '@/components/ui/StickyCta';
 import { ComparisonSection } from '@/components/sections/ComparisonSection';
 import { FaqSection } from '@/components/sections/FaqSection';
 import { FlowCurve } from '@/components/sections/FlowCurve';
@@ -94,6 +96,7 @@ export default function LandingPage() {
             <div className={styles.heroMockup}>
               <AttributionStream />
               <DeviceMockup />
+              <MobileHeroVisual />
             </div>
           </section>
 
@@ -181,6 +184,8 @@ export default function LandingPage() {
         <footer className={styles.footer}>
           <p>TGPulse. Traffic analytics for Telegram channels</p>
         </footer>
+
+        <StickyCta />
       </div>
     </SmoothScroll>
   );

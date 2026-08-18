@@ -109,7 +109,7 @@
 }
 
 .heroTitle {
-  font-size: clamp(2rem, 1.1rem + 3.4vw, 3.8rem);
+  font-size: clamp(2.15rem, 1.1rem + 3.4vw, 3.8rem);
   font-weight: 500;
   max-width: 21ch;
   margin-bottom: 1.4rem;
@@ -306,4 +306,49 @@
   text-align: center;
   color: var(--color-text-muted);
   font-size: 0.85rem;
+}
+
+/* ---------- mobile-first hero ---------- */
+
+@media (max-width: 640px) {
+  .hero {
+    padding-top: 5.5rem;
+  }
+
+  .badge {
+    font-size: 0.72rem;
+    padding: 0.32rem 0.85rem;
+    margin-bottom: 1.3rem;
+  }
+
+  .heroSub {
+    font-size: 0.95rem;
+    margin-bottom: 1.7rem;
+  }
+
+  .heroActions {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 2.8rem;
+  }
+
+  .primaryCta,
+  .ghostCta {
+    text-align: center;
+    padding: 0.95rem 1.5rem;
+  }
+
+  .nav {
+    margin-top: 0.6rem;
+    padding: 0.5rem 0.6rem 0.5rem 1rem;
+  }
+
+  .featureCard {
+    padding: 1.25rem;
+  }
+
+  .gradientPanel {
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
 }

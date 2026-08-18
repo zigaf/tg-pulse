@@ -65,7 +65,7 @@ export function ComparisonSection() {
             className={col.highlight ? `${styles.col} ${styles.colHighlight}` : styles.col}
             initial={reduce ? false : { opacity: 0, y: 32 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.25 }}
+            viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.7, delay: i * 0.1, ease: EASE }}
           >
             <h3 className={col.highlight ? `${styles.colName} ${styles.colNameHighlight}` : styles.colName}>

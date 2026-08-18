@@ -21,6 +21,12 @@
   filter: drop-shadow(0 0 8px oklch(62% 0.21 288 / 0.9));
 }
 
+/* Mobile-only timeline rail and node markers. */
+.timeline,
+.mobileNode {
+  display: none;
+}
+
 .card {
   position: absolute;
   transform: translateY(-50%);
@@ -30,7 +36,6 @@
   border-radius: var(--radius-lg);
   padding: 1.1rem 1.3rem;
   backdrop-filter: blur(16px);
-  overflow: hidden;
 }
 
 /* Gradient hairline along the top edge of each step card. */
@@ -87,17 +92,62 @@
   background: var(--color-accent);
 }
 
+/* Mobile: the curve becomes a vertical glowing timeline.
+   Rail on the left, a node marker at each card's title level. */
 @media (max-width: 700px) {
   .wrap {
     aspect-ratio: auto;
+    padding-left: 2.2rem;
   }
+
   .svg {
     display: none;
   }
+
+  .timeline {
+    display: block;
+    position: absolute;
+    left: 3px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    border-radius: 1px;
+    background: linear-gradient(
+      180deg,
+      oklch(74% 0.16 288),
+      oklch(62% 0.21 288) 55%,
+      oklch(96% 0.005 290)
+    );
+    filter: drop-shadow(0 0 8px oklch(62% 0.21 288 / 0.55));
+    transform-origin: top;
+  }
+
   .card {
-    position: static;
+    position: relative;
     transform: none;
     width: 100%;
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.7rem;
+    padding: 1.1rem;
+  }
+
+  .mobileNode {
+    display: block;
+    position: absolute;
+    left: calc(-2.2rem + 4px);
+    top: 1.25rem;
+    width: 8px;
+    height: 8px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: var(--color-accent-bright);
+    box-shadow: 0 0 8px oklch(62% 0.21 288 / 0.9);
+  }
+
+  .cardStep {
+    font-size: 0.6rem;
+  }
+
+  .cardTitle {
+    font-size: 0.95rem;
   }
 }

@@ -1,9 +1,11 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import styles from './flow-curve.module.css';
 
 const CURVE = 'M 80,40 C 260,60 300,190 250,310 C 210,410 300,520 520,560';
+const MOBILE_MAX_WIDTH = 700;
 
 const NODES = [
   {
@@ -40,7 +42,26 @@ const NODES = [
   },
 ] as const;
 
+/** Desktop stagger syncs cards with the curve drawing; on mobile each
+ *  card enters the viewport on its own, so long delays feel broken. */
+function useIsMobile(maxWidth: number) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${maxWidth}px)`);
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, [maxWidth]);
+
+  return isMobile;
+}
+
 export function FlowCurve() {
+  const reduce = useReducedMotion();
+  const isMobile = useIsMobile(MOBILE_MAX_WIDTH);
+
   return (
     <div className={styles.wrap}>
       <svg viewBox="0 0 640 620" className={styles.svg} aria-hidden="true">
@@ -58,7 +79,7 @@ export function FlowCurve() {
           strokeWidth="2.5"
           strokeLinecap="round"
           className={styles.glowPath}
-          initial={{ pathLength: 0 }}
+          initial={reduce ? false : { pathLength: 0 }}
           whileInView={{ pathLength: 1 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 2, ease: [0.16, 1, 0.3, 1] }}
@@ -70,7 +91,7 @@ export function FlowCurve() {
             cy={n.y}
             r="5"
             className={styles.node}
-            initial={{ opacity: 0, scale: 0 }}
+            initial={reduce ? false : { opacity: 0, scale: 0 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.4 + i * 0.35, duration: 0.4 }}
@@ -78,21 +99,41 @@ export function FlowCurve() {
         ))}
       </svg>
 
+      {/* Mobile-only glowing rail, drawn top-down on scroll. */}
+      <motion.span
+        className={styles.timeline}
+        aria-hidden="true"
+        initial={reduce ? false : { scaleY: 0 }}
+        whileInView={{ scaleY: 1 }}
+        viewport={{ once: true, amount: 0.1 }}
+        transition={{ duration: 1.6, ease: [0.16, 1, 0.3, 1] }}
+      />
+
       {NODES.map((n, i) => (
         <motion.article
           key={n.step}
           className={styles.card}
-          style={{
-            top: `${(n.y / 620) * 100}%`,
-            ...(n.side === 'right'
-              ? { left: `${(n.x / 640) * 100 + 4}%` }
-              : { right: `${100 - (n.x / 640) * 100 + 4}%` }),
-          }}
-          initial={{ opacity: 0, y: 24 }}
+          // Inline absolute coords are desktop-only; the mobile timeline flows statically.
+          style={
+            isMobile
+              ? undefined
+              : {
+                  top: `${(n.y / 620) * 100}%`,
+                  ...(n.side === 'right'
+                    ? { left: `${(n.x / 640) * 100 + 4}%` }
+                    : { right: `${100 - (n.x / 640) * 100 + 4}%` }),
+                }
+          }
+          initial={reduce ? false : { opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.6 }}
-          transition={{ delay: 0.5 + i * 0.35, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={{
+            delay: isMobile ? 0.1 : 0.5 + i * 0.35,
+            duration: 0.6,
+            ease: [0.16, 1, 0.3, 1],
+          }}
         >
+          <span className={styles.mobileNode} aria-hidden="true" />
           <p className={styles.cardStep}>{n.step}</p>
           <h3 className={styles.cardTitle}>{n.title}</h3>
           <ul className={styles.cardList}>
