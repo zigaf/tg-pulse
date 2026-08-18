@@ -1,4 +1,4 @@
-import { getPrisma, BotStatus, type Channel } from '@tgpulse/db';
+import { getPrisma, BotStatus, type Channel, type TrackedLink } from '@tgpulse/db';
 
 const prisma = getPrisma();
 
@@ -20,6 +20,14 @@ export async function getUserActiveChannels(tgUserId: number): Promise<Channel[]
 export async function getUserChannel(tgUserId: number, channelId: string): Promise<Channel | null> {
   const channels = await getUserActiveChannels(tgUserId);
   return channels.find((channel) => channel.id === channelId) ?? null;
+}
+
+/** One TrackedLink by id, only if the Telegram user has access to its channel. */
+export async function getUserLink(tgUserId: number, linkId: string): Promise<TrackedLink | null> {
+  const link = await prisma.trackedLink.findUnique({ where: { id: linkId } });
+  if (!link) return null;
+  const channel = await getUserChannel(tgUserId, link.channelId);
+  return channel ? link : null;
 }
 
 /** Map of TrackedLink id -> label for the given ids (nulls filtered out by caller). */

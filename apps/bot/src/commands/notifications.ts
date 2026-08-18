@@ -1,8 +1,17 @@
 import type { Bot } from 'grammy';
+import type { Channel } from '@tgpulse/db';
 import { notificationsMenu } from '../menus';
-import { isSubscribed, toggleSubscription } from '../notifications';
+import { getSubscribedChannelIds, toggleSubscription } from '../notifications';
 import { getUserActiveChannels, getUserChannel } from '../queries';
 import { texts } from '../texts';
+
+async function buildMenu(tgUserId: number, channels: Channel[]) {
+  const subscribed = await getSubscribedChannelIds(
+    tgUserId,
+    channels.map((channel) => channel.id),
+  );
+  return notificationsMenu(channels, subscribed);
+}
 
 export function registerNotifications(bot: Bot): void {
   bot.command('notifications', async (ctx) => {
@@ -14,10 +23,9 @@ export function registerNotifications(bot: Bot): void {
       return;
     }
 
-    const tgUserId = ctx.from.id;
     await ctx.reply(texts.notifications.header, {
       parse_mode: 'HTML',
-      reply_markup: notificationsMenu(channels, (channelId) => isSubscribed(channelId, tgUserId)),
+      reply_markup: await buildMenu(ctx.from.id, channels),
     });
   });
 
@@ -29,14 +37,12 @@ export function registerNotifications(bot: Bot): void {
     }
 
     const tgUserId = ctx.from.id;
-    const isOn = toggleSubscription(channel.id, tgUserId);
+    const isOn = await toggleSubscription(channel.id, tgUserId);
     await ctx.answerCallbackQuery({ text: texts.notifications.toggled(channel.title, isOn) });
 
     const channels = await getUserActiveChannels(tgUserId);
     await ctx
-      .editMessageReplyMarkup({
-        reply_markup: notificationsMenu(channels, (channelId) => isSubscribed(channelId, tgUserId)),
-      })
+      .editMessageReplyMarkup({ reply_markup: await buildMenu(tgUserId, channels) })
       .catch(() => {
         // markup may be unchanged or the message too old; the toggle itself already applied
       });

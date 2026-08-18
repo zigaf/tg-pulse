@@ -1,33 +1,73 @@
 import { GrammyError, type Api } from 'grammy';
-import { EventType, type Channel } from '@tgpulse/db';
+import { getPrisma, EventType, type Channel } from '@tgpulse/db';
 import { texts } from './texts';
 
-// TODO(phase-2): persist notification subscriptions in the DB (schema is frozen for Phase 1).
-// In-memory map: channelId -> set of Telegram user ids who opted in. Default is off.
-const subscriptions = new Map<string, Set<number>>();
+const prisma = getPrisma();
 
 const TG_FORBIDDEN = 403; // user blocked the bot or never started it
 
-export function isSubscribed(channelId: string, tgUserId: number): boolean {
-  return subscriptions.get(channelId)?.has(tgUserId) ?? false;
+/**
+ * channelId -> opted-in Telegram user ids.
+ *
+ * AlertSubscription in Postgres is the source of truth; this map only keeps the
+ * join/leave fan-out from querying the DB on every single member event. It starts
+ * empty on boot, fills lazily on first use, and the affected channel entry is
+ * dropped on every toggle so the next event reloads it.
+ */
+const subscribersByChannel = new Map<string, Set<number>>();
+
+async function loadSubscribers(channelId: string): Promise<Set<number>> {
+  const cached = subscribersByChannel.get(channelId);
+  if (cached) return cached;
+
+  const rows = await prisma.alertSubscription.findMany({
+    where: { channelId },
+    select: { tgUserId: true },
+  });
+  const loaded = new Set(rows.map((row) => Number(row.tgUserId)));
+  subscribersByChannel.set(channelId, loaded);
+  return loaded;
 }
 
-export function hasSubscribers(channelId: string): boolean {
-  return (subscriptions.get(channelId)?.size ?? 0) > 0;
+/** Which of the given channels the user currently gets instant alerts for. */
+export async function getSubscribedChannelIds(
+  tgUserId: number,
+  channelIds: string[],
+): Promise<Set<string>> {
+  if (channelIds.length === 0) return new Set();
+
+  const rows = await prisma.alertSubscription.findMany({
+    where: { tgUserId: BigInt(tgUserId), channelId: { in: channelIds } },
+    select: { channelId: true },
+  });
+  return new Set(rows.map((row) => row.channelId));
+}
+
+/** Cheap guard before doing the work of building an alert. Served from the cache. */
+export async function hasSubscribers(channelId: string): Promise<boolean> {
+  return (await loadSubscribers(channelId)).size > 0;
 }
 
 /** Toggle a user's subscription for a channel. Returns the new state (true = on). */
-export function toggleSubscription(channelId: string, tgUserId: number): boolean {
-  const current = subscriptions.get(channelId) ?? new Set<number>();
-  const isOn = current.has(tgUserId);
-  const updated = new Set(current);
-  if (isOn) {
-    updated.delete(tgUserId);
+export async function toggleSubscription(channelId: string, tgUserId: number): Promise<boolean> {
+  const key = { channelId, tgUserId: BigInt(tgUserId) };
+  const existing = await prisma.alertSubscription.findUnique({
+    where: { channelId_tgUserId: key },
+  });
+
+  // deleteMany/upsert instead of delete/create: a double tap must not throw.
+  if (existing) {
+    await prisma.alertSubscription.deleteMany({ where: key });
   } else {
-    updated.add(tgUserId);
+    await prisma.alertSubscription.upsert({
+      where: { channelId_tgUserId: key },
+      create: key,
+      update: {},
+    });
   }
-  subscriptions.set(channelId, updated);
-  return !isOn;
+
+  subscribersByChannel.delete(channelId);
+  return existing === null;
 }
 
 /** Fan out an instant join/leave alert to opted-in users. Never throws. */
@@ -37,8 +77,8 @@ export async function notifyMemberEvent(
   type: EventType,
   sourceLabel: string,
 ): Promise<void> {
-  const recipients = subscriptions.get(channel.id);
-  if (!recipients || recipients.size === 0) return;
+  const recipients = await loadSubscribers(channel.id);
+  if (recipients.size === 0) return;
 
   const text =
     type === EventType.JOIN

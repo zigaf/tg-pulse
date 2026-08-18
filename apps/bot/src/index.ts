@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { getPrisma } from '@tgpulse/db';
 import { bot } from './bot';
 import { registerChannels } from './commands/channels';
+import { registerFraud } from './commands/fraud';
 import { registerHelp } from './commands/help';
 import { registerNewlink } from './commands/newlink';
 import { registerNotifications } from './commands/notifications';
@@ -19,6 +20,7 @@ import { texts } from './texts';
 registerStart(bot);
 registerHelp(bot);
 registerChannels(bot);
+registerFraud(bot);
 registerNotifications(bot);
 registerStats(bot);
 registerNewlink(bot);
@@ -100,6 +102,7 @@ async function main() {
     { command: 'newlink', description: texts.commands.newlink },
     { command: 'stats', description: texts.commands.stats },
     { command: 'channels', description: texts.commands.channels },
+    { command: 'fraud', description: texts.commands.fraud },
     { command: 'help', description: texts.commands.help },
   ]);
 

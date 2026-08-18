@@ -1,5 +1,69 @@
 import { config } from './config';
-import { escapeHtml } from './format';
+import { escapeHtml, numberWord, percent, truncate } from './format';
+import { MIN_JOINS_FOR_VERDICT, type FraudReport, type FraudSignal, type FraudVerdict, type SignalKey } from './fraud';
+
+const FRAUD_BUTTON_LABEL_MAX = 28;
+
+const VERDICT_BADGE: Record<FraudVerdict, string> = {
+  not_enough_data: '⚪',
+  clean: '🟢',
+  suspicious: '🟡',
+  likely_fraud: '🔴',
+};
+
+const VERDICT_TITLE: Record<FraudVerdict, string> = {
+  not_enough_data: 'Not enough data',
+  clean: 'Clean',
+  suspicious: 'Suspicious',
+  likely_fraud: 'Likely fraud',
+};
+
+const SIGNAL_LABEL: Record<SignalKey, string> = {
+  burst: 'Arrived in bursts',
+  churn24h: 'Left within 24 hours',
+  churn7d: 'Left within 7 days',
+  noUsername: 'Accounts with no username',
+  noFirstName: 'Accounts with no first name',
+  lowPremium: 'Telegram Premium accounts',
+  conversion: 'Clicks that became joins',
+};
+
+/** Plain-English evidence for the recommendation sentence. */
+const SIGNAL_EVIDENCE: Record<SignalKey, (signal: FraudSignal, report: FraudReport) => string> = {
+  burst: (s, r) => `${percent(s.value)} of joins arrived in ${numberWord(r.bursts.length)} 5-minute bursts`,
+  churn24h: (s) => `${percent(s.value)} left within 24 hours`,
+  churn7d: (s) => `${percent(s.value)} left within 7 days`,
+  noUsername: (s) => `${percent(s.value)} of the accounts have no username`,
+  noFirstName: (s) => `${percent(s.value)} of the accounts have no first name`,
+  lowPremium: (s) => `only ${percent(s.value)} of them are Telegram Premium`,
+  conversion: (s) => `${percent(s.value)} of clicks turned into joins, far above a normal seeding rate`,
+};
+
+function signalLine(signal: FraudSignal, report: FraudReport): string {
+  const windows = report.bursts.length;
+  const detail =
+    signal.key === 'burst' ? ` across ${windows} 5-minute ${windows === 1 ? 'window' : 'windows'}` : '';
+  return `${SIGNAL_LABEL[signal.key]}: <code>${percent(signal.value)}</code>${detail} (+${signal.contribution})`;
+}
+
+function recommendation(report: FraudReport): string {
+  const evidence = report.signals
+    .filter((signal) => signal.contribution > 0)
+    .slice(0, 2)
+    .map((signal) => SIGNAL_EVIDENCE[signal.key](signal, report))
+    .join(' and ');
+
+  switch (report.verdict) {
+    case 'not_enough_data':
+      return `Only ${report.joins} joins so far. A reliable verdict needs at least ${MIN_JOINS_FOR_VERDICT} joins through this link.`;
+    case 'clean':
+      return 'This traffic behaves like a real audience. Nothing to act on.';
+    case 'suspicious':
+      return `Hold the next payment and ask the channel admin to explain: ${evidence}.`;
+    case 'likely_fraud':
+      return `Ask the channel admin for a refund: ${evidence}.`;
+  }
+}
 
 /**
  * Single dictionary for every user-facing string.
@@ -27,6 +91,7 @@ export const texts = {
     newlink: 'Create a tracking link',
     stats: 'Joins, leaves and sources, last 7 days',
     channels: 'Your channels and links',
+    fraud: 'Check a seeding link for bot traffic',
     help: 'How it works and FAQ',
   },
 
@@ -47,6 +112,7 @@ export const texts = {
       '/newlink creates a tracking link',
       '/stats shows the last 7 days per channel',
       '/channels lists channels, their links and stats',
+      '/fraud scores a link for bot traffic: bursts, instant leaves, empty profiles',
       '/notifications toggles instant join and leave alerts',
       '',
       '<b>FAQ</b>',
@@ -136,6 +202,46 @@ export const texts = {
       `+1 subscriber to <b>${escapeHtml(title)}</b> via ${escapeHtml(source)}`,
     left: (title: string, source: string) =>
       `-1 subscriber from <b>${escapeHtml(title)}</b> (came via ${escapeHtml(source)})`,
+  },
+
+  fraud: {
+    pickChannel: [
+      '<b>🛡 Fraud check</b>',
+      '',
+      'Pick a channel to review the traffic quality of its links.',
+    ].join('\n'),
+    noLinks: 'No links in this channel yet. Create one with /newlink and check it after the seeding runs.',
+    linksHeader: (title: string) =>
+      [
+        `<b>🛡 Fraud check: ${escapeHtml(title)}</b>`,
+        '',
+        'Score runs from 0 to 100, higher means more bot-like. Pick a link for the full report.',
+      ].join('\n'),
+    linkButton: (report: FraudReport) => {
+      const score = report.verdict === 'not_enough_data' ? 'n/a' : String(report.score);
+      return `${VERDICT_BADGE[report.verdict]} ${truncate(report.label, FRAUD_BUTTON_LABEL_MAX)} · ${score}`;
+    },
+    linkUnavailable: 'This link is not available anymore.',
+    report: (report: FraudReport) => {
+      const lines = [
+        `${VERDICT_BADGE[report.verdict]} <b>${VERDICT_TITLE[report.verdict]}</b>`,
+        `Link: <b>${escapeHtml(report.label)}</b>`,
+        `Score: <code>${report.score}</code> of 100`,
+        '',
+        `Joins <code>${report.joins}</code> · clicks <code>${report.clicks}</code>`,
+      ];
+
+      if (report.signals.length > 0) {
+        lines.push('', ...report.signals.map((signal) => signalLine(signal, report)));
+      }
+      if (report.unmeasured.length > 0) {
+        const names = report.unmeasured.map((key) => SIGNAL_LABEL[key]).join(', ');
+        lines.push('', `Not measured yet, sample too small: ${names}.`);
+      }
+
+      lines.push('', recommendation(report));
+      return lines.join('\n');
+    },
   },
 
   sources: {

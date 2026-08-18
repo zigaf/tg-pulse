@@ -167,7 +167,7 @@ bot.on('chat_member', async (ctx) => {
     void firePostbacks(channel, 'leave', sourceLink, tgUserId);
 
     // Instant alerts for opted-in users; never blocks attribution handling
-    if (hasSubscribers(channel.id)) {
+    if (await hasSubscribers(channel.id)) {
       void notifyMemberEvent(bot.api, channel, EventType.LEAVE, sourceLink?.label ?? texts.sources.organic);
     }
   }

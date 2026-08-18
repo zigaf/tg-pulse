@@ -14,6 +14,9 @@ export const CB = {
   chStats: (channelId: string) => `ch:stats:${channelId}`,
   chLinks: (channelId: string) => `ch:links:${channelId}`,
   ntfToggle: (channelId: string) => `ntf:${channelId}`,
+  goFraud: 'go:fraud',
+  frChannel: (channelId: string) => `fr:ch:${channelId}`,
+  frLink: (linkId: string) => `fr:link:${linkId}`,
 } as const;
 
 export const CHANNELS_PAGE_SIZE = 5;
@@ -83,10 +86,31 @@ export function backToChannelMenu(channelId: string): InlineKeyboard {
   return new InlineKeyboard().text(texts.buttons.back, CB.chOpen(channelId));
 }
 
-export function notificationsMenu(channels: Channel[], isOn: (channelId: string) => boolean): InlineKeyboard {
+export function fraudChannelPickerMenu(channels: Channel[]): InlineKeyboard {
   const keyboard = new InlineKeyboard();
   for (const channel of channels) {
-    keyboard.text(`${channel.title}: ${isOn(channel.id) ? 'on' : 'off'}`, CB.ntfToggle(channel.id)).row();
+    keyboard.text(channel.title, CB.frChannel(channel.id)).row();
+  }
+  return keyboard;
+}
+
+export function fraudLinksMenu(links: { linkId: string; title: string }[]): InlineKeyboard {
+  const keyboard = new InlineKeyboard();
+  for (const link of links) {
+    keyboard.text(link.title, CB.frLink(link.linkId)).row();
+  }
+  return keyboard.text(texts.buttons.back, CB.goFraud);
+}
+
+export function backToFraudLinksMenu(channelId: string): InlineKeyboard {
+  return new InlineKeyboard().text(texts.buttons.back, CB.frChannel(channelId));
+}
+
+export function notificationsMenu(channels: Channel[], subscribedIds: Set<string>): InlineKeyboard {
+  const keyboard = new InlineKeyboard();
+  for (const channel of channels) {
+    const state = subscribedIds.has(channel.id) ? 'on' : 'off';
+    keyboard.text(`${channel.title}: ${state}`, CB.ntfToggle(channel.id)).row();
   }
   return keyboard;
 }
