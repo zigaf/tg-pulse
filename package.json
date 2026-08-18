@@ -15,6 +15,7 @@
     "dev:bot": "npm run dev -w apps/bot",
     "build:web": "npm run build -w packages/db && npm run build -w apps/web",
     "build:bot": "npm run build -w packages/db && npm run build -w apps/bot",
+    "railway:start": "npm run db:push -w packages/db && if [ \"$SERVICE_ROLE\" = \"bot\" ]; then npm run start -w apps/bot; else npm run start -w apps/web; fi",
     "db:generate": "npm run generate -w packages/db",
     "db:migrate": "npm run migrate:dev -w packages/db",
     "typecheck": "npm run typecheck -w apps/web -w apps/bot -w packages/db"
