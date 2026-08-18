@@ -1,0 +1,98 @@
+.chartBlock {
+  background-color: oklch(17% 0.02 290 / 0.5);
+  background-image: radial-gradient(oklch(55% 0.03 290 / 0.16) 1px, transparent 1px);
+  background-size: 22px 22px;
+  border: 1px solid oklch(40% 0.03 290 / 0.2);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.6rem 0.35rem;
+  margin-bottom: 0.7rem;
+}
+
+.canvas {
+  position: relative;
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.subsLine {
+  fill: none;
+  stroke: oklch(70% 0.18 288);
+  stroke-width: 2;
+}
+
+.churnLine {
+  fill: none;
+  stroke: oklch(65% 0.19 25 / 0.6);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+
+.eventLine {
+  stroke: oklch(70% 0.05 290 / 0.35);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.eventFlag {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  background: oklch(15% 0.02 290 / 0.85);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.1rem 0.35rem;
+  white-space: nowrap;
+}
+
+.dotCore {
+  fill: oklch(74% 0.16 288);
+}
+
+.dotPulse {
+  fill: none;
+  stroke: oklch(74% 0.16 288 / 0.8);
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse-ring 2.4s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6rem;
+  color: var(--color-text-muted);
+  padding: 0.3rem 0.15rem 0.1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dotPulse {
+    animation: none;
+    opacity: 0;
+  }
+}

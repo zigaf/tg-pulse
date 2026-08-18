@@ -83,36 +83,38 @@
 
 .hero {
   position: relative;
-  text-align: center;
-  padding: clamp(9rem, 7rem + 6vw, 13rem) 1.5rem 0;
+  padding: clamp(7rem, 6rem + 3vw, 9.5rem) 1.5rem 0;
   background:
     radial-gradient(ellipse 70% 45% at 50% 0%, oklch(35% 0.14 288 / 0.35), transparent 70%),
     radial-gradient(ellipse 45% 35% at 50% 30%, oklch(30% 0.12 288 / 0.25), transparent 70%);
 }
 
+/* Raw attribution strings as background texture instead of a decorative word */
 .heroBackdrop {
   position: absolute;
-  top: clamp(3rem, 2rem + 4vw, 5rem);
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: clamp(6rem, 22vw, 19rem);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  background: linear-gradient(180deg, oklch(45% 0.12 288 / 0.35), transparent 85%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  inset: clamp(4rem, 3rem + 3vw, 6rem) 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  font-family: var(--font-mono), monospace;
+  font-size: clamp(0.75rem, 0.6rem + 0.6vw, 1.05rem);
+  color: oklch(60% 0.08 288 / 0.6);
+  white-space: nowrap;
   pointer-events: none;
   user-select: none;
-  white-space: nowrap;
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 40%, black 25%, transparent 78%);
+  opacity: 0.35;
+}
+
+.heroContent {
+  position: relative;
+  max-width: 1140px;
+  margin: 0 auto;
 }
 
 .badge {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
   font-size: 0.8rem;
   color: var(--color-text-muted);
   border: 1px solid oklch(45% 0.05 290 / 0.35);
@@ -123,33 +125,22 @@
   backdrop-filter: blur(10px);
 }
 
-.badgeDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-positive);
-}
-
 .heroTitle {
-  position: relative;
-  font-size: clamp(1.9rem, 1rem + 3.6vw, 3.6rem);
+  font-size: clamp(2rem, 1.1rem + 3.4vw, 3.8rem);
   font-weight: 500;
-  max-width: 56rem;
-  margin: 0 auto 1.4rem;
+  max-width: 21ch;
+  margin-bottom: 1.4rem;
 }
 
 .heroSub {
-  position: relative;
   color: var(--color-text-muted);
-  max-width: 36rem;
-  margin: 0 auto 2.2rem;
+  max-width: 34rem;
+  margin-bottom: 2.2rem;
   font-size: clamp(0.95rem, 0.9rem + 0.3vw, 1.1rem);
 }
 
 .heroActions {
-  position: relative;
   display: flex;
-  justify-content: center;
   gap: 0.9rem;
   margin-bottom: clamp(3.5rem, 2.5rem + 4vw, 6rem);
 }
@@ -284,7 +275,6 @@
 
 .panelStats {
   display: flex;
-  gap: 2.5rem;
   justify-content: flex-end;
 }
 
@@ -297,7 +287,7 @@
 .panelStatLabel {
   color: oklch(80% 0.03 290);
   font-size: 0.8rem;
-  max-width: 10rem;
+  max-width: 14rem;
 }
 
 @media (max-width: 800px) {

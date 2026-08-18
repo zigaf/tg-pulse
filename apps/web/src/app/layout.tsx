@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { JetBrains_Mono, Onest } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-inter' });
+const onest = Onest({ subsets: ['latin', 'cyrillic'], variable: '--font-sans' });
 const mono = JetBrains_Mono({
   subsets: ['latin', 'cyrillic'],
   variable: '--font-mono',
@@ -10,14 +10,14 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'TGPulse — откуда приходят подписчики и деньги в ваш Telegram-канал',
+  title: 'TGPulse: see where your Telegram subscribers and revenue come from',
   description:
-    'Точная атрибуция подписчиков, конверсии в Яндекс.Директ и Telegram Ads, ROMI по источникам. Веб-дашборд вместо Excel.',
+    'Exact subscriber attribution for Telegram channels, conversion postbacks to ad platforms, ROMI per source. A live dashboard instead of spreadsheets.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={`${inter.variable} ${mono.variable}`}>
+    <html lang="en" className={`${onest.variable} ${mono.variable}`}>
       <body>{children}</body>
     </html>
   );

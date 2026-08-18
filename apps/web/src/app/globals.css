@@ -1,25 +1,46 @@
 :root {
   /* palette: premium dark, violet-first (ref: Nexora) */
-  --color-bg: oklch(12% 0.012 290);
-  --color-bg-elevated: oklch(16% 0.018 290);
+  --color-bg: oklch(11% 0.012 290);
+  --color-bg-elevated: oklch(15% 0.018 290);
   --color-surface: oklch(19% 0.02 290 / 0.55);
-  --color-border: oklch(40% 0.03 290 / 0.35);
   --color-text: oklch(96% 0.005 290);
-  --color-text-muted: oklch(68% 0.015 290);
+  --color-text-muted: oklch(70% 0.015 290);
   --color-accent: oklch(62% 0.21 288); /* violet */
   --color-accent-bright: oklch(74% 0.16 288);
   --color-positive: oklch(75% 0.15 155);
   --color-negative: oklch(65% 0.19 25);
+  --color-warning: oklch(80% 0.14 85);
+
+  /* borders */
+  --color-border: oklch(45% 0.04 290 / 0.22);
+  --color-border-strong: oklch(55% 0.06 290 / 0.4);
+  --color-border-accent: oklch(62% 0.21 288 / 0.4);
+
+  /* categorical source palette — attribution at the color level.
+     Particles = table ticks = donut = live feed. Accent is brand only. */
+  --src-tgads: oklch(70% 0.14 240);
+  --src-yandex: oklch(78% 0.15 85);
+  --src-seeding: oklch(68% 0.19 310);
+  --src-organic: oklch(75% 0.13 165);
 
   --gradient-panel: linear-gradient(180deg, oklch(20% 0.05 290 / 0.4), oklch(45% 0.18 288 / 0.55));
   --glow-accent: oklch(55% 0.22 288 / 0.35);
 
+  /* type scale */
   --text-base: clamp(1rem, 0.94rem + 0.3vw, 1.0625rem);
-  --space-section: clamp(5rem, 4rem + 6vw, 11rem);
+  --text-hero: clamp(2.5rem, 1.2rem + 5vw, 4.75rem);
+  --text-h2: clamp(1.75rem, 1.2rem + 2.4vw, 3rem);
+  --text-caption: 0.7rem;
+
+  /* rhythm */
+  --space-section: clamp(6rem, 4rem + 8vw, 13rem);
+  --space-title-gap: clamp(2.5rem, 2rem + 2vw, 4rem);
+  --space-inner: clamp(1.25rem, 1rem + 1vw, 2rem);
 
   --radius-xl: 28px;
   --radius-lg: 18px;
   --radius-md: 12px;
+  --duration-fast: 150ms;
   --duration-normal: 300ms;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -37,7 +58,7 @@ html {
 body {
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
   font-size: var(--text-base);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;

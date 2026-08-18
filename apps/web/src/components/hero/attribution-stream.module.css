@@ -1,0 +1,215 @@
+.stream {
+  display: flex;
+  justify-content: center;
+  overflow: visible;
+}
+
+.stage {
+  position: relative;
+  width: 600px;
+  height: 140px;
+  flex: none;
+}
+
+.paths {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* base rail */
+.path {
+  fill: none;
+  stroke: oklch(45% 0.05 290 / 0.25);
+  stroke-width: 1;
+}
+
+/* running light: a short bright dash traveling along the rail */
+.pulse {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 12 320;
+  opacity: 0.9;
+  animation: rail-pulse 2.6s linear infinite;
+}
+
+@keyframes rail-pulse {
+  from {
+    stroke-dashoffset: 332;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.chip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  background: oklch(17% 0.02 290 / 0.75);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  animation: chip-float 5s ease-in-out infinite;
+}
+
+@keyframes chip-float {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(-3px);
+  }
+  50% {
+    transform: translateX(-50%) translateY(3px);
+  }
+}
+
+.chipDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--pc);
+  box-shadow: 0 0 8px 1px color-mix(in oklch, var(--pc) 60%, transparent);
+}
+
+.particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  background: var(--pc);
+  box-shadow: 0 0 9px 2px color-mix(in oklch, var(--pc) 55%, transparent);
+  offset-rotate: auto;
+  animation: flow 3.2s cubic-bezier(0.5, 0, 0.9, 0.4) infinite;
+}
+
+/* comet tail trailing behind the particle along the path direction */
+.particle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 55%;
+  width: 20px;
+  height: 2.5px;
+  transform: translateY(-50%);
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, var(--pc));
+  filter: blur(2px);
+  opacity: 0.8;
+}
+
+@keyframes flow {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+/* landing splash rings at the convergence point (300, 132) */
+.ring {
+  position: absolute;
+  left: 289px;
+  top: 121px;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--color-accent-bright);
+  border-radius: 50%;
+  opacity: 0;
+  animation: ring-splash 1.6s ease-out infinite;
+}
+
+@keyframes ring-splash {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.8;
+  }
+  80% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* receiver line at the mockup edge */
+.receiver {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-accent-bright), transparent);
+  animation: receiver-pulse 2.4s ease-in-out infinite;
+}
+
+.receiverGlow {
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: -4px;
+  height: 12px;
+  background: radial-gradient(ellipse 50% 100% at 50% 100%, oklch(62% 0.21 288 / 0.5), transparent 70%);
+  filter: blur(6px);
+  animation: receiver-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes receiver-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .particle {
+    animation: none;
+    offset-distance: var(--rest, 50%);
+  }
+  .particle::after {
+    opacity: 0;
+  }
+  .pulse {
+    animation: none;
+    opacity: 0;
+  }
+  .chip {
+    animation: none;
+  }
+  .ring {
+    animation: none;
+    opacity: 0;
+  }
+  .receiver,
+  .receiverGlow {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+@media (max-width: 640px) {
+  .stream {
+    overflow: hidden;
+  }
+  .stage {
+    transform: scale(0.55);
+    transform-origin: bottom center;
+    margin-top: -60px;
+  }
+}

@@ -1,0 +1,115 @@
+.table {
+  --cols: 1.5fr 1fr 0.6fr 0.55fr 0.5fr;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.headRow {
+  display: grid;
+  grid-template-columns: var(--cols);
+  gap: 0.8rem;
+  padding: 0 0.8rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+}
+
+.alignRight {
+  text-align: right;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.72rem;
+  background: oklch(19% 0.02 290 / 0.4);
+  border-radius: 10px;
+  padding: 0.55rem 0.8rem;
+}
+
+.rowBad {
+  background: oklch(65% 0.19 25 / 0.07);
+}
+
+.rowName {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.tick {
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.name {
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fraudBadge {
+  flex: none;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.05em;
+  color: var(--color-negative);
+  border: 1px solid oklch(65% 0.19 25 / 0.4);
+  border-radius: 5px;
+  padding: 0.05rem 0.32rem;
+}
+
+.rowBar {
+  height: 5px;
+  background: oklch(30% 0.02 290 / 0.6);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.rowFill {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-bright));
+  transform-origin: left center;
+}
+
+.fillBad {
+  background: var(--color-negative);
+}
+
+.num {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.good {
+  color: var(--color-positive);
+}
+
+.bad {
+  color: var(--color-negative);
+}
+
+@media (max-width: 640px) {
+  .table {
+    --cols: 1.5fr 0.6fr 0.5fr;
+  }
+  .rowBar,
+  .cpsCell,
+  .volHead,
+  .cpsHead {
+    display: none;
+  }
+}

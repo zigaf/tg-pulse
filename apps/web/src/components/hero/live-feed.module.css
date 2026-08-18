@@ -1,0 +1,45 @@
+.feed {
+  width: 198px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem;
+  background: oklch(16% 0.02 290 / 0.85);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 60px oklch(8% 0.02 290 / 0.6);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.66rem;
+  color: var(--color-text);
+  background: oklch(21% 0.02 290 / 0.6);
+  border-radius: 9px;
+  padding: 0.38rem 0.55rem;
+}
+
+/* semantic live indicator: a real-time subscription event */
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-positive);
+  flex: none;
+}
+
+.rowText {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.sourceTag {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}

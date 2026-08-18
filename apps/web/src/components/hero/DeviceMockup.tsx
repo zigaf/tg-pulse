@@ -2,99 +2,104 @@
 
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
+import { DashboardChart } from './DashboardChart';
+import { LiveFeed } from './LiveFeed';
+import { SourceDonut } from './SourceDonut';
+import { SourcesTable } from './SourcesTable';
 import styles from './device.module.css';
 
-const SOURCES = [
-  { name: 'посев @invest_talk', subs: '1 240', cps: '71 ₽', churn: '2.9%', width: 92, tone: 'good' },
-  { name: 'Telegram Ads · крео #4', subs: '890', cps: '96 ₽', churn: '4.1%', width: 66, tone: 'good' },
-  { name: 'Я.Директ · лендинг A', subs: '610', cps: '88 ₽', churn: '3.4%', width: 45, tone: 'good' },
-  { name: 'посев @biz_daily', subs: '112', cps: '218 ₽', churn: '19%', width: 9, tone: 'bad' },
-] as const;
-
-/** Perspective-tilted dashboard mockup that straightens as you scroll (ref: Nexora hero). */
+/**
+ * Layered dashboard mockup: ghost back screen, perspective-tilted main device
+ * that straightens on scroll, and floating satellites moving faster than the device.
+ */
 export function DeviceMockup() {
   const wrap = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: wrap, offset: ['start 90%', 'start 25%'] });
+
   const rotateX = useTransform(scrollYProgress, [0, 1], [24, 0]);
   const y = useTransform(scrollYProgress, [0, 1], [40, 0]);
+  const yBack = useTransform(scrollYProgress, [0, 1], [60, 24]);
+  const yFloat = useTransform(scrollYProgress, [0, 1], [90, -10]);
 
   return (
     <div ref={wrap} className={styles.perspective}>
+      {/* back layer: ghost outline of a second screen */}
       <motion.div
-        className={styles.device}
-        style={reduced ? undefined : { rotateX, y }}
+        className={styles.ghost}
+        aria-hidden="true"
+        style={reduced ? undefined : { y: yBack, x: '-3%', scale: 0.94 }}
       >
+        <div className={styles.ghostBar} />
+        <div className={styles.ghostTiles}>
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className={styles.ghostBlock} />
+      </motion.div>
+
+      {/* main layer */}
+      <motion.div className={styles.device} style={reduced ? undefined : { rotateX, y }}>
+        <div className={styles.chromeBar} aria-hidden="true">
+          <span className={styles.lights}>
+            <span className={`${styles.light} ${styles.lightRed}`} />
+            <span className={`${styles.light} ${styles.lightAmber}`} />
+            <span className={`${styles.light} ${styles.lightGreen}`} />
+          </span>
+          <span className={styles.urlPill}>app.tgpulse.io/channels/daily_alpha</span>
+          <span />
+        </div>
+
         <div className={styles.topbar}>
           <div className={styles.channel}>
             <span className={styles.avatar} />
             <div>
-              <p className={styles.channelName}>Инвестиции без воды</p>
-              <p className={styles.channelMeta}>@invest_bez_vody · 48 210 подписчиков</p>
+              <p className={styles.channelName}>Daily Alpha</p>
+              {/* sample data */}
+              <p className={styles.channelMeta}>@daily_alpha · 48,210 subscribers</p>
             </div>
           </div>
-          <div className={styles.range}>7 дней</div>
+          <div className={styles.segments}>
+            <span className={styles.segment}>24h</span>
+            <span className={`${styles.segment} ${styles.segmentActive}`}>7d</span>
+            <span className={styles.segment}>30d</span>
+          </div>
         </div>
 
+        {/* sample data */}
         <div className={styles.tiles}>
           <div className={styles.tile}>
-            <p className={styles.tileLabel}>Подписки</p>
-            <p className={styles.tileValue}>+2 852</p>
-            <p className={`${styles.tileDelta} ${styles.up}`}>↑ 18% к прошлой неделе</p>
+            <p className={styles.tileLabel}>Subscribers</p>
+            <p className={styles.tileValue}>+2,852</p>
+            <p className={`${styles.tileDelta} ${styles.up}`}>↑ 18% vs last week</p>
           </div>
           <div className={styles.tile}>
-            <p className={styles.tileLabel}>Цена подписчика</p>
-            <p className={styles.tileValue}>84 ₽</p>
-            <p className={`${styles.tileDelta} ${styles.up}`}>↓ 31 ₽ после отключения #7</p>
+            <p className={styles.tileLabel}>Cost per subscriber</p>
+            <p className={styles.tileValue}>$1.02</p>
+            <p className={`${styles.tileDelta} ${styles.up}`}>↓ $0.37 after pausing #7</p>
           </div>
           <div className={styles.tile}>
-            <p className={styles.tileLabel}>Отписки 7 дней</p>
+            <p className={styles.tileLabel}>Unsubs, 7 days</p>
             <p className={styles.tileValue}>3.2%</p>
-            <p className={styles.tileDelta}>в норме для ниши</p>
+            <p className={styles.tileDelta}>normal for the niche</p>
           </div>
         </div>
 
-        <div className={styles.chartBlock}>
-          <svg viewBox="0 0 560 120" className={styles.chart} aria-hidden="true">
-            <defs>
-              <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="oklch(62% 0.21 288)" stopOpacity="0.35" />
-                <stop offset="100%" stopColor="oklch(62% 0.21 288)" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M0,95 C50,90 80,78 130,74 C180,70 210,60 260,55 C310,50 340,42 390,36 C440,30 490,24 560,14 L560,120 L0,120 Z"
-              fill="url(#fill)"
-            />
-            <path
-              d="M0,95 C50,90 80,78 130,74 C180,70 210,60 260,55 C310,50 340,42 390,36 C440,30 490,24 560,14"
-              fill="none"
-              stroke="oklch(70% 0.18 288)"
-              strokeWidth="2"
-            />
-          </svg>
-        </div>
-
-        <div className={styles.table}>
-          {SOURCES.map((s) => (
-            <div key={s.name} className={styles.row}>
-              <span className={styles.rowName}>{s.name}</span>
-              <span className={styles.rowBar}>
-                <span
-                  className={`${styles.rowFill} ${s.tone === 'bad' ? styles.fillBad : ''}`}
-                  style={{ width: `${s.width}%` }}
-                />
-              </span>
-              <span className={styles.rowStat}>{s.subs}</span>
-              <span className={styles.rowStat}>{s.cps}</span>
-              <span className={`${styles.rowStat} ${s.tone === 'bad' ? styles.bad : styles.good}`}>
-                {s.churn}
-              </span>
-            </div>
-          ))}
-        </div>
+        <DashboardChart />
+        <SourcesTable />
       </motion.div>
+
+      {/* float layer: satellites move faster than the device */}
+      <motion.div className={styles.floatFeed} style={reduced ? undefined : { y: yFloat }}>
+        <LiveFeed />
+      </motion.div>
+      <motion.div className={styles.floatDonut} style={reduced ? undefined : { y: yFloat }}>
+        <SourceDonut />
+      </motion.div>
+
       <div className={styles.deviceGlow} aria-hidden="true" />
+      <div className={styles.reflection} aria-hidden="true" />
     </div>
   );
 }

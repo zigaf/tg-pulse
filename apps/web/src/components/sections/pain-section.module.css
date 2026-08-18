@@ -1,0 +1,90 @@
+.section {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: var(--space-section) 1.5rem 0;
+}
+
+.heading {
+  font-size: var(--text-h2);
+  margin-bottom: var(--space-title-gap);
+}
+
+/* Staggered ladder: three cards of different widths, stepping down the grid. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  column-gap: var(--space-inner);
+  row-gap: 0;
+}
+
+.cellA {
+  grid-column: 1 / 8;
+}
+
+.cellB {
+  grid-column: 8 / 13;
+  margin-top: clamp(3rem, 6vw, 5.5rem);
+}
+
+.cellC {
+  grid-column: 3 / 11;
+  margin-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.4rem, 1.2rem + 1vw, 2rem);
+  backdrop-filter: blur(14px);
+  transition:
+    border-color var(--duration-normal),
+    transform var(--duration-normal) var(--ease-out-expo);
+}
+
+.card:hover {
+  border-color: var(--color-border-strong);
+  transform: translateY(-3px);
+}
+
+.icon {
+  color: var(--color-accent-bright);
+  display: block;
+  margin-bottom: 0.9rem;
+}
+
+.cardTitle {
+  font-size: 1.08rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.5rem;
+}
+
+.cardBody {
+  font-size: 0.92rem;
+  color: var(--color-text-muted);
+  max-width: 46ch;
+}
+
+.bridge {
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+  padding-left: 1.1rem;
+  border-left: 2px solid var(--color-accent);
+  font-size: clamp(1.05rem, 1rem + 0.4vw, 1.25rem);
+  font-weight: 500;
+  max-width: 34ch;
+}
+
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: 1fr;
+    row-gap: 0.9rem;
+  }
+
+  .cellA,
+  .cellB,
+  .cellC {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+}
