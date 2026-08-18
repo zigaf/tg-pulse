@@ -9,13 +9,29 @@ import table from '../shared/table.module.css';
 import ui from '../shared/ui.module.css';
 import { CopyButton } from './CopyButton';
 import { CreateLinkModal } from './CreateLinkModal';
+import { InstallPixelModal } from './InstallPixelModal';
 import styles from './links.module.css';
 
-const TABLE_STYLE = { '--cols': '1.4fr 1.5fr 0.5fr 0.5fr 0.5fr 0.8fr 0.9fr', '--min-width': '780px' } as CSSProperties;
+const TABLE_STYLE = { '--cols': '1.3fr 1.4fr 0.45fr 0.45fr 0.45fr 0.7fr 0.75fr 1.15fr', '--min-width': '900px' } as CSSProperties;
 const CONFIRM_RESET_MS = 3000;
 
 function shortUrl(url: string): string {
   return url.replace(/^https?:\/\//, '');
+}
+
+function LandingCell({ views, clicks }: { views: number; clicks: number }) {
+  if (views === 0 && clicks === 0) {
+    return <span className={styles.landingCell}>—</span>;
+  }
+  return (
+    <span className={styles.landingCell} title="Pixel pageviews → outbound clicks">
+      <span className={styles.landingViews}>{formatNumber(views)}</span>
+      <span className={styles.landingArrow} aria-hidden="true">
+        →
+      </span>
+      {formatNumber(clicks)}
+    </span>
+  );
 }
 
 function LinkRow({
@@ -23,11 +39,13 @@ function LinkRow({
   isConfirming,
   isRevoking,
   onRevokeClick,
+  onInstallPixel,
 }: {
   link: TrackedLink;
   isConfirming: boolean;
   isRevoking: boolean;
   onRevokeClick: (id: string) => void;
+  onInstallPixel: (link: TrackedLink) => void;
 }) {
   return (
     <div className={`${table.row} ${table.rowHover} ${link.isRevoked ? styles.rowRevoked : ''}`}>
@@ -42,8 +60,12 @@ function LinkRow({
       <span className={table.num}>{formatNumber(link.clicks)}</span>
       <span className={table.numStrong}>{formatNumber(link.joins)}</span>
       <span className={table.num}>{formatNumber(link.leaves)}</span>
+      <LandingCell views={link.pixelViews} clicks={link.pixelClicks} />
       <span className={table.num}>{formatFullDate(link.createdAt)}</span>
       <span className={styles.actionsCell}>
+        <button type="button" className={styles.pixelBtn} onClick={() => onInstallPixel(link)}>
+          Install pixel
+        </button>
         {link.isRevoked ? (
           <span className={ui.badgeNegative}>revoked</span>
         ) : (
@@ -66,6 +88,7 @@ export function LinksView({ channelId }: { channelId: string }) {
   const [links, setLinks] = useState<TrackedLink[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pixelLink, setPixelLink] = useState<TrackedLink | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
@@ -151,6 +174,9 @@ export function LinksView({ channelId }: { channelId: string }) {
               <span className={table.alignRight}>clicks</span>
               <span className={table.alignRight}>joins</span>
               <span className={table.alignRight}>leaves</span>
+              <span className={table.alignRight} title="Pixel pageviews → outbound clicks">
+                landing
+              </span>
               <span className={table.alignRight}>created</span>
               <span className={table.alignRight}>actions</span>
             </div>
@@ -161,6 +187,7 @@ export function LinksView({ channelId }: { channelId: string }) {
                 isConfirming={confirmingId === link.id}
                 isRevoking={revokingId === link.id}
                 onRevokeClick={(id) => void handleRevokeClick(id)}
+                onInstallPixel={setPixelLink}
               />
             ))}
           </div>
@@ -173,6 +200,7 @@ export function LinksView({ channelId }: { channelId: string }) {
         onClose={() => setIsModalOpen(false)}
         onCreated={handleCreated}
       />
+      <InstallPixelModal link={pixelLink} onClose={() => setPixelLink(null)} />
     </section>
   );
 }

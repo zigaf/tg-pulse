@@ -11,6 +11,7 @@ import { registerStart } from './commands/start';
 import { registerStats } from './commands/stats';
 import { config } from './config';
 import { registerFallback } from './fallback';
+import { registerPixel } from './pixel';
 import { registerReports, startReportCron } from './reports';
 import { startMemberCountSync } from './sync';
 import { texts } from './texts';
@@ -29,8 +30,15 @@ const prisma = getPrisma();
 
 app.get('/health', async () => ({ ok: true }));
 
+// Landing-page pixel: GET /pixel.js + POST /px beacon ingest
+registerPixel(app);
+
+const AD_CLICK_ID_KEYS = ['yclid', 'gclid', 'fbclid', 'ttclid'] as const;
+
 // ---------- Tracking redirect: go.<domain>/l/<slug> ----------
-app.get<{ Params: { slug: string } }>('/l/:slug', async (req, reply) => {
+app.get<{ Params: { slug: string }; Querystring: Record<string, unknown> }>(
+  '/l/:slug',
+  async (req, reply) => {
   const link = await prisma.trackedLink.findUnique({ where: { slug: req.params.slug } });
   if (!link || link.isRevoked) {
     return reply.code(404).send({ error: 'link not found' });
@@ -39,6 +47,18 @@ app.get<{ Params: { slug: string } }>('/l/:slug', async (req, reply) => {
   const hash = (v: string | undefined) =>
     v ? createHash('sha256').update(v).digest('hex').slice(0, 32) : undefined;
 
+  const qs = (v: unknown) => (typeof v === 'string' && v.length > 0 ? v.slice(0, 500) : undefined);
+
+  // Pixel visitor id stitched onto the link by pixel.js (?cid=...)
+  const clientId = qs(req.query.cid);
+  // Ad-platform click ids passed directly on the go-link (no pixel on the landing)
+  const adClickIds: Record<string, string> = {};
+  for (const key of AD_CLICK_ID_KEYS) {
+    const value = qs(req.query[key]);
+    if (value) adClickIds[key] = value;
+  }
+  const referer = (req.headers.referer as string | undefined)?.slice(0, 500);
+
   // Fire-and-forget: never slow the redirect down because of a stats write
   prisma.click
     .create({
@@ -46,7 +66,10 @@ app.get<{ Params: { slug: string } }>('/l/:slug', async (req, reply) => {
         linkId: link.id,
         ipHash: hash(req.ip),
         uaHash: hash(req.headers['user-agent'] as string | undefined),
-        referer: (req.headers.referer as string | undefined)?.slice(0, 500),
+        referer,
+        clientId,
+        landingUrl: referer,
+        ...(Object.keys(adClickIds).length > 0 ? { adClickIds } : {}),
       },
     })
     .catch((e: unknown) => app.log.error(e, 'click write failed'));

@@ -82,6 +82,10 @@ export interface TrackedLink {
   clicks: number;
   joins: number;
   leaves: number;
+  /** Pixel pageviews on landings tagged with this link's slug (all time). */
+  pixelViews: number;
+  /** Pixel outbound clicks (visitor clicked the go-link on the landing). */
+  pixelClicks: number;
   createdAt: string;
 }
 
@@ -91,6 +95,32 @@ export interface CreateLinkInput {
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
+}
+
+export interface ApiPostback {
+  id: string;
+  channelId: string;
+  name: string;
+  urlTemplate: string;
+  onJoin: boolean;
+  onLeave: boolean;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CreatePostbackInput {
+  name: string;
+  urlTemplate: string;
+  onJoin: boolean;
+  onLeave: boolean;
+}
+
+export interface UpdatePostbackInput {
+  name?: string;
+  urlTemplate?: string;
+  onJoin?: boolean;
+  onLeave?: boolean;
+  isActive?: boolean;
 }
 
 export interface SubscriberRow {
@@ -148,12 +178,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T
   return { ok: false, error: messageForStatus(response.status), status: response.status };
 }
 
-function post<T>(path: string, payload?: unknown): Promise<ApiResult<T>> {
+function send<T>(method: 'POST' | 'PATCH', path: string, payload?: unknown): Promise<ApiResult<T>> {
   return request<T>(path, {
-    method: 'POST',
+    method,
     headers: { 'Content-Type': 'application/json' },
     body: payload === undefined ? undefined : JSON.stringify(payload),
   });
+}
+
+function post<T>(path: string, payload?: unknown): Promise<ApiResult<T>> {
+  return send<T>('POST', path, payload);
 }
 
 export function getMe(): Promise<ApiResult<MeData>> {
@@ -174,6 +208,27 @@ export function createLink(channelId: string, input: CreateLinkInput): Promise<A
 
 export function revokeLink(id: string): Promise<ApiResult<TrackedLink>> {
   return post<TrackedLink>(`/api/links/${id}/revoke`);
+}
+
+export function getPostbacks(channelId: string): Promise<ApiResult<ApiPostback[]>> {
+  return request<ApiPostback[]>(`/api/channels/${channelId}/postbacks`);
+}
+
+export function createPostback(channelId: string, input: CreatePostbackInput): Promise<ApiResult<ApiPostback>> {
+  return post<ApiPostback>(`/api/channels/${channelId}/postbacks`, input);
+}
+
+export function updatePostback(id: string, input: UpdatePostbackInput): Promise<ApiResult<ApiPostback>> {
+  return send<ApiPostback>('PATCH', `/api/postbacks/${id}`, input);
+}
+
+export function deletePostback(id: string): Promise<ApiResult<{ id: string }>> {
+  return request<{ id: string }>(`/api/postbacks/${id}`, { method: 'DELETE' });
+}
+
+/** Fires the postback once with test macro values; resolves the upstream HTTP status. */
+export function testPostback(id: string): Promise<ApiResult<{ status: number }>> {
+  return post<{ status: number }>(`/api/postbacks/${id}/test`);
 }
 
 export function getSubscribers(

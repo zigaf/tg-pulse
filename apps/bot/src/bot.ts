@@ -2,6 +2,7 @@ import { Bot } from 'grammy';
 import { getPrisma, BotStatus, EventType, Attribution } from '@tgpulse/db';
 import { config } from './config';
 import { hasSubscribers, notifyMemberEvent } from './notifications';
+import { firePostbacks } from './postbacks';
 import { texts } from './texts';
 
 export const bot = new Bot(config.botToken);
@@ -138,6 +139,9 @@ bot.on('chat_member', async (ctx) => {
       data: { channelId: channel.id, tgUserId, type: EventType.JOIN, linkId: link?.id, ts: now },
     });
 
+    // Server-to-server conversion postbacks; never blocks attribution handling
+    void firePostbacks(channel, 'join', link, tgUserId);
+
     // Instant alerts for opted-in users; never blocks attribution handling
     void notifyMemberEvent(bot.api, channel, EventType.JOIN, link?.label ?? texts.sources.organic);
   } else {
@@ -152,11 +156,18 @@ bot.on('chat_member', async (ctx) => {
       data: { channelId: channel.id, tgUserId, type: EventType.LEAVE, linkId: sub?.linkId, ts: now },
     });
 
+    const sourceLink = sub?.linkId
+      ? await prisma.trackedLink.findUnique({
+          where: { id: sub.linkId },
+          select: { id: true, slug: true, label: true },
+        })
+      : null;
+
+    // Server-to-server conversion postbacks; never blocks attribution handling
+    void firePostbacks(channel, 'leave', sourceLink, tgUserId);
+
     // Instant alerts for opted-in users; never blocks attribution handling
     if (hasSubscribers(channel.id)) {
-      const sourceLink = sub?.linkId
-        ? await prisma.trackedLink.findUnique({ where: { id: sub.linkId }, select: { label: true } })
-        : null;
       void notifyMemberEvent(bot.api, channel, EventType.LEAVE, sourceLink?.label ?? texts.sources.organic);
     }
   }

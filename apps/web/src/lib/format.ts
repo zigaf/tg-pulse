@@ -32,3 +32,12 @@ export function formatFullDate(value: string): string {
 }
 
 export const BOT_USERNAME = process.env.NEXT_PUBLIC_BOT_USERNAME || 'tgpulse_bot';
+
+/** Public base of the go/pixel service (bot app); used to build client-side snippets. */
+export const GO_BASE =
+  process.env.NEXT_PUBLIC_GO_BASE_URL?.replace(/\/+$/, '') || 'https://bot-production-04da.up.railway.app';
+
+/** Landing pixel snippet for a tracked link slug. */
+export function pixelSnippet(slug: string): string {
+  return `<script async src="${GO_BASE}/pixel.js" data-tgp="${slug}"></script>`;
+}

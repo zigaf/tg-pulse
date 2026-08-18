@@ -83,7 +83,9 @@
 
 .actionsCell {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 0.4rem;
 }
 
 .revokeBtn {
@@ -116,6 +118,52 @@
   color: var(--color-negative);
   border-color: oklch(65% 0.19 25 / 0.55);
   background: oklch(65% 0.19 25 / 0.1);
+}
+
+.landingCell {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  text-align: right;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.landingViews {
+  color: var(--color-text);
+}
+
+.landingArrow {
+  opacity: 0.55;
+  padding: 0 0.15rem;
+}
+
+.pixelBtn {
+  font: inherit;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+
+.pixelBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-accent);
+  background: oklch(62% 0.21 288 / 0.1);
+}
+
+.pixelBtn:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 1px;
 }
 
 /* ---------- modal ---------- */
@@ -223,4 +271,47 @@
   justify-content: flex-end;
   gap: 0.6rem;
   margin-top: 0.3rem;
+}
+
+/* ---------- install pixel ---------- */
+
+.pixelIntro {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.8rem;
+}
+
+.pixelIntro strong {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.snippetBlock {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: oklch(12% 0.015 290 / 0.9);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.8rem;
+}
+
+.snippetCode {
+  flex: 1;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+.pixelSteps {
+  margin: 0.9rem 0 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
 }

@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
-import { getPrisma, EventType } from '@tgpulse/db';
+import { getPrisma, EventType, PixelEventType } from '@tgpulse/db';
 import { assertChannelAccess } from '@/server/access';
 import { getSessionUserId } from '@/server/auth';
 import { handleRouteError, jsonError, jsonOk, parseOrThrow, readJsonBody } from '@/server/http';
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     await assertChannelAccess(userId, channelId);
 
     const prisma = getPrisma();
-    const [links, eventGroups] = await Promise.all([
+    const [links, eventGroups, pixelGroups] = await Promise.all([
       prisma.trackedLink.findMany({
         where: { channelId },
         orderBy: { createdAt: 'desc' },
@@ -45,6 +45,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       prisma.memberEvent.groupBy({
         by: ['linkId', 'type'],
         where: { channelId, linkId: { not: null } },
+        _count: { _all: true },
+      }),
+      prisma.pixelEvent.groupBy({
+        by: ['linkId', 'type'],
+        where: { link: { channelId } },
         _count: { _all: true },
       }),
     ]);
@@ -58,13 +63,22 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       statsByLink.set(group.linkId, stats);
     }
 
+    const pixelByLink = new Map<string, { pixelViews: number; pixelClicks: number }>();
+    for (const group of pixelGroups) {
+      const stats = pixelByLink.get(group.linkId) ?? { pixelViews: 0, pixelClicks: 0 };
+      if (group.type === PixelEventType.PAGEVIEW) stats.pixelViews = group._count._all;
+      else stats.pixelClicks = group._count._all;
+      pixelByLink.set(group.linkId, stats);
+    }
+
     return jsonOk(
-      links.map((link) =>
-        toLinkDto(link, {
+      links.map((link) => ({
+        ...toLinkDto(link, {
           clicks: link._count.clicks,
           ...(statsByLink.get(link.id) ?? { joins: 0, leaves: 0 }),
         }),
-      ),
+        ...(pixelByLink.get(link.id) ?? { pixelViews: 0, pixelClicks: 0 }),
+      })),
     );
   } catch (error) {
     return handleRouteError(error);
@@ -96,7 +110,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       },
     });
 
-    return jsonOk(toLinkDto(link, { clicks: 0, joins: 0, leaves: 0 }));
+    return jsonOk({ ...toLinkDto(link, { clicks: 0, joins: 0, leaves: 0 }), pixelViews: 0, pixelClicks: 0 });
   } catch (error) {
     return handleRouteError(error);
   }
