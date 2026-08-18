@@ -1,21 +1,24 @@
 :root {
-  /* palette: data-driven dark luxury */
-  --color-bg: oklch(16% 0.02 265);
-  --color-bg-elevated: oklch(20% 0.025 265);
-  --color-surface: oklch(23% 0.03 265 / 0.6);
-  --color-border: oklch(35% 0.03 265 / 0.5);
-  --color-text: oklch(95% 0.01 265);
-  --color-text-muted: oklch(72% 0.02 265);
-  --color-accent: oklch(75% 0.17 195); /* electric cyan */
-  --color-accent-2: oklch(65% 0.24 295); /* violet */
-  --color-positive: oklch(75% 0.18 155);
-  --color-negative: oklch(65% 0.2 25);
+  /* palette: premium dark, violet-first (ref: Nexora) */
+  --color-bg: oklch(12% 0.012 290);
+  --color-bg-elevated: oklch(16% 0.018 290);
+  --color-surface: oklch(19% 0.02 290 / 0.55);
+  --color-border: oklch(40% 0.03 290 / 0.35);
+  --color-text: oklch(96% 0.005 290);
+  --color-text-muted: oklch(68% 0.015 290);
+  --color-accent: oklch(62% 0.21 288); /* violet */
+  --color-accent-bright: oklch(74% 0.16 288);
+  --color-positive: oklch(75% 0.15 155);
+  --color-negative: oklch(65% 0.19 25);
 
-  --text-base: clamp(1rem, 0.94rem + 0.3vw, 1.125rem);
-  --text-hero: clamp(2.4rem, 1.2rem + 4.5vw, 4.6rem);
-  --space-section: clamp(4rem, 3rem + 5vw, 9rem);
+  --gradient-panel: linear-gradient(180deg, oklch(20% 0.05 290 / 0.4), oklch(45% 0.18 288 / 0.55));
+  --glow-accent: oklch(55% 0.22 288 / 0.35);
 
-  --radius-lg: 20px;
+  --text-base: clamp(1rem, 0.94rem + 0.3vw, 1.0625rem);
+  --space-section: clamp(5rem, 4rem + 6vw, 11rem);
+
+  --radius-xl: 28px;
+  --radius-lg: 18px;
   --radius-md: 12px;
   --duration-normal: 300ms;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -38,19 +41,25 @@ body {
   font-size: var(--text-base);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
+/* Clean grotesque headings — medium weight, tight tracking, sentence case */
 h1,
 h2,
 h3 {
-  font-family: var(--font-unbounded), var(--font-inter), sans-serif;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+::selection {
+  background: oklch(62% 0.21 288 / 0.4);
 }
 
 @media (prefers-reduced-motion: reduce) {

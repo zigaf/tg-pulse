@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { Inter, Unbounded } from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-inter' });
-const unbounded = Unbounded({
+const mono = JetBrains_Mono({
   subsets: ['latin', 'cyrillic'],
-  variable: '--font-unbounded',
-  weight: ['400', '600', '800'],
+  variable: '--font-mono',
+  weight: ['400', '500'],
 });
 
 export const metadata: Metadata = {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={`${inter.variable} ${unbounded.variable}`}>
+    <html lang="ru" className={`${inter.variable} ${mono.variable}`}>
       <body>{children}</body>
     </html>
   );
