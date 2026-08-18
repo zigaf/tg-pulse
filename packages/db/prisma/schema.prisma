@@ -75,6 +75,7 @@ model Channel {
   links       TrackedLink[]
   subscribers Subscriber[]
   events      MemberEvent[]
+  postbacks   Postback[]
 
   @@map("channels")
 }
@@ -104,6 +105,7 @@ model TrackedLink {
   clicks        Click[]
   subscribers   Subscriber[]
   events        MemberEvent[]
+  pixelEvents   PixelEvent[]
 
   @@index([channelId])
   @@map("tracked_links")
@@ -116,10 +118,58 @@ model Click {
   ipHash    String?     @map("ip_hash") // sha256, privacy-preserving
   uaHash    String?     @map("ua_hash")
   referer   String?
+  /** Pixel visitor id (localStorage cid) when the click came from a pixeled landing */
+  clientId  String?     @map("client_id")
+  /** Ad-platform click ids captured on the landing: { yclid?, gclid?, fbclid?, ttclid? } */
+  adClickIds Json?      @map("ad_click_ids")
+  landingUrl String?    @map("landing_url")
   link      TrackedLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
 
   @@index([linkId, ts])
+  @@index([linkId, clientId])
   @@map("clicks")
+}
+
+/** Raw pixel telemetry from landing pages (pageviews and outbound clicks). */
+model PixelEvent {
+  id        String         @id @default(cuid())
+  linkId    String         @map("link_id")
+  clientId  String         @map("client_id")
+  type      PixelEventType
+  url       String?
+  referer   String?
+  utmSource String?        @map("utm_source")
+  utmMedium String?        @map("utm_medium")
+  utmCampaign String?      @map("utm_campaign")
+  adClickIds Json?         @map("ad_click_ids")
+  ts        DateTime       @default(now())
+  link      TrackedLink    @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId, ts])
+  @@index([linkId, clientId])
+  @@map("pixel_events")
+}
+
+enum PixelEventType {
+  PAGEVIEW
+  CLICK
+}
+
+/** Server-to-server conversion postback template, fired on attributed joins. */
+model Postback {
+  id          String   @id @default(cuid())
+  channelId   String   @map("channel_id")
+  name        String
+  /** URL template with macros: {event} {slug} {label} {cid} {yclid} {gclid} {fbclid} {ttclid} */
+  urlTemplate String   @map("url_template")
+  onJoin      Boolean  @default(true) @map("on_join")
+  onLeave     Boolean  @default(false) @map("on_leave")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+  @@map("postbacks")
 }
 
 model Subscriber {
