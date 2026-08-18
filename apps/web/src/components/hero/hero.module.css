@@ -1,0 +1,111 @@
+.chartCard {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  backdrop-filter: blur(18px);
+  box-shadow:
+    0 30px 80px oklch(10% 0.03 265 / 0.6),
+    inset 0 1px 0 oklch(100% 0 0 / 0.06);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-positive);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+.chartSvg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.grid {
+  stroke: var(--color-border);
+  stroke-dasharray: 3 6;
+  stroke-width: 1;
+}
+
+.lineGood {
+  stroke: var(--color-accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 10px oklch(75% 0.17 195 / 0.55));
+}
+
+.lineBad {
+  stroke: var(--color-text-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+
+.statCard {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.9rem;
+  font-size: 0.78rem;
+  box-shadow: 0 12px 30px oklch(10% 0.03 265 / 0.5);
+}
+
+.statTop {
+  top: 18%;
+  right: -6%;
+}
+
+.statBottom {
+  bottom: 8%;
+  left: -5%;
+}
+
+.statLabel {
+  color: var(--color-text-muted);
+}
+
+.statValue {
+  font-weight: 600;
+  color: var(--color-positive);
+}
+
+.negative {
+  color: var(--color-negative);
+}
+
+@media (max-width: 768px) {
+  .statTop {
+    right: 0;
+  }
+  .statBottom {
+    left: 0;
+  }
+}

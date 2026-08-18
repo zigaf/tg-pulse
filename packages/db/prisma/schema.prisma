@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Identity & teams ----------
+
+model User {
+  id          String       @id @default(cuid())
+  tgId        BigInt       @unique @map("tg_id")
+  username    String?
+  firstName   String?      @map("first_name")
+  lastName    String?      @map("last_name")
+  photoUrl    String?      @map("photo_url")
+  languageCode String?     @map("language_code")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  memberships Membership[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id        String       @id @default(cuid())
+  name      String
+  plan      Plan         @default(FREE)
+  createdAt DateTime     @default(now()) @map("created_at")
+  members   Membership[]
+  channels  Channel[]
+
+  @@map("workspaces")
+}
+
+enum Plan {
+  FREE
+  PRO
+  AGENCY
+}
+
+model Membership {
+  userId      String        @map("user_id")
+  workspaceId String        @map("workspace_id")
+  role        WorkspaceRole @default(OWNER)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, workspaceId])
+  @@map("memberships")
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  VIEWER
+}
+
+// ---------- Channels ----------
+
+model Channel {
+  id          String        @id @default(cuid())
+  tgChatId    BigInt        @unique @map("tg_chat_id")
+  title       String
+  username    String? // public @username if any
+  workspaceId String        @map("workspace_id")
+  botStatus   BotStatus     @default(PENDING) @map("bot_status")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  links       TrackedLink[]
+  subscribers Subscriber[]
+  events      MemberEvent[]
+
+  @@map("channels")
+}
+
+enum BotStatus {
+  PENDING // channel created, bot not yet admin
+  ACTIVE // bot is admin, receiving chat_member updates
+  REMOVED // bot lost admin rights
+}
+
+// ---------- Attribution core ----------
+
+model TrackedLink {
+  id            String       @id @default(cuid())
+  slug          String       @unique // go.<domain>/l/<slug>
+  channelId     String       @map("channel_id")
+  label         String // human name: "посев @channel 18.08"
+  creative      String? // creative tag
+  utmSource     String?      @map("utm_source")
+  utmMedium     String?      @map("utm_medium")
+  utmCampaign   String?      @map("utm_campaign")
+  targetPostUrl String?      @map("target_post_url") // landing-post mode: redirect to a post instead of invite
+  inviteLink    String?      @map("invite_link") // unique t.me/+... created via Bot API
+  isRevoked     Boolean      @default(false) @map("is_revoked")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  channel       Channel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  clicks        Click[]
+  subscribers   Subscriber[]
+  events        MemberEvent[]
+
+  @@index([channelId])
+  @@map("tracked_links")
+}
+
+model Click {
+  id        String      @id @default(cuid())
+  linkId    String      @map("link_id")
+  ts        DateTime    @default(now())
+  ipHash    String?     @map("ip_hash") // sha256, privacy-preserving
+  uaHash    String?     @map("ua_hash")
+  referer   String?
+  link      TrackedLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId, ts])
+  @@map("clicks")
+}
+
+model Subscriber {
+  id           String       @id @default(cuid())
+  channelId    String       @map("channel_id")
+  tgUserId     BigInt       @map("tg_user_id")
+  username     String?
+  firstName    String?      @map("first_name")
+  isPremium    Boolean      @default(false) @map("is_premium")
+  linkId       String?      @map("link_id") // attribution: which tracked link brought them
+  attribution  Attribution  @default(UNKNOWN) // how confident the attribution is
+  joinedAt     DateTime     @map("joined_at")
+  leftAt       DateTime?    @map("left_at")
+  rejoinCount  Int          @default(0) @map("rejoin_count")
+  channel      Channel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  link         TrackedLink? @relation(fields: [linkId], references: [id], onDelete: SetNull)
+
+  @@unique([channelId, tgUserId])
+  @@index([channelId, joinedAt])
+  @@index([linkId])
+  @@map("subscribers")
+}
+
+enum Attribution {
+  EXACT // joined via our unique invite link
+  PROBABLE // time-window click matching (landing-post mode)
+  ORGANIC // native TG invite link / search / forward
+  UNKNOWN
+}
+
+// Raw event log: source of truth for all analytics
+model MemberEvent {
+  id        String       @id @default(cuid())
+  channelId String       @map("channel_id")
+  tgUserId  BigInt       @map("tg_user_id")
+  type      EventType
+  linkId    String?      @map("link_id")
+  ts        DateTime     @default(now())
+  channel   Channel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  link      TrackedLink? @relation(fields: [linkId], references: [id], onDelete: SetNull)
+
+  @@index([channelId, ts])
+  @@map("member_events")
+}
+
+enum EventType {
+  JOIN
+  LEAVE
+}
+
+// Phase 4+: ConversionExport (Yandex/VK offline conversions), SaleEvent (ROMI module),
+// ContractorProfile (agency mode) — added when those phases start.
