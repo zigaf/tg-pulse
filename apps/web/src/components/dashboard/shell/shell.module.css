@@ -1,0 +1,252 @@
+.shell {
+  display: grid;
+  grid-template-columns: 218px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+/* ---------- sidebar ---------- */
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  padding: 1.1rem 0.85rem;
+  border-right: 1px solid var(--color-border);
+  background: linear-gradient(180deg, oklch(14% 0.018 290 / 0.9), oklch(12% 0.014 290 / 0.9));
+}
+
+.sidebarTop {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  padding: 0.25rem 0.4rem;
+  border-radius: 8px;
+  transition: color var(--duration-fast) ease;
+  align-self: flex-start;
+}
+
+.backLink:hover {
+  color: var(--color-text);
+}
+
+.channelBlock {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0 0.4rem;
+  min-width: 0;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: oklch(98% 0 0);
+  background: linear-gradient(135deg, var(--color-accent), oklch(70% 0.15 230));
+}
+
+.channelText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.channelTitle {
+  font-weight: 600;
+  font-size: 0.82rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.channelMeta {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.66rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- nav ---------- */
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.navItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.7rem;
+  transition:
+    color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+
+.navItem:hover {
+  color: var(--color-text);
+  background: oklch(24% 0.025 290 / 0.5);
+}
+
+.navItem:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: -2px;
+}
+
+.navItemActive {
+  color: var(--color-text);
+  background: oklch(62% 0.21 288 / 0.13);
+}
+
+.navItemActive::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--color-accent-bright);
+}
+
+.navItemActive svg {
+  color: var(--color-accent-bright);
+}
+
+/* ---------- sign out ---------- */
+
+.signOut {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
+}
+
+.signOut:hover {
+  color: var(--color-negative);
+  border-color: oklch(65% 0.19 25 / 0.3);
+}
+
+/* ---------- content ---------- */
+
+.content {
+  min-width: 0;
+  padding: 1.6rem 2rem 4rem;
+  max-width: 1080px;
+  width: 100%;
+}
+
+/* ---------- mobile: sidebar becomes top tabs ---------- */
+
+@media (max-width: 860px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.9rem;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    backdrop-filter: blur(18px);
+  }
+
+  .sidebarTop {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .backLink {
+    padding: 0.35rem;
+  }
+
+  .channelBlock {
+    padding: 0;
+  }
+
+  .channelText {
+    display: none;
+  }
+
+  .nav {
+    flex-direction: row;
+    flex: 1;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navItem {
+    padding: 0.45rem 0.65rem;
+    white-space: nowrap;
+  }
+
+  .navItemActive::before {
+    top: auto;
+    left: 22%;
+    right: 22%;
+    bottom: 0;
+    width: auto;
+    height: 2px;
+  }
+
+  .signOut span {
+    display: none;
+  }
+
+  .signOut {
+    padding: 0.45rem;
+  }
+
+  .content {
+    padding: 1.2rem 1rem 3rem;
+  }
+}

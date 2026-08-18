@@ -5,7 +5,7 @@
     "buildCommand": "npm run build:bot"
   },
   "deploy": {
-    "startCommand": "npm run migrate:deploy -w packages/db && npm run start -w apps/bot",
+    "startCommand": "npm run db:push -w packages/db && npm run start -w apps/bot",
     "healthcheckPath": "/health",
     "restartPolicyType": "ON_FAILURE"
   }

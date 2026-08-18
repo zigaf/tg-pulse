@@ -1,0 +1,47 @@
+.skeletonRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  text-align: center;
+  padding: 2.6rem 1.5rem;
+}
+
+.stateIcon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  color: var(--color-accent-bright);
+  background: oklch(62% 0.21 288 / 0.1);
+  border: 1px solid oklch(62% 0.21 288 / 0.25);
+}
+
+.stateIconError {
+  color: var(--color-negative);
+  background: oklch(65% 0.19 25 / 0.08);
+  border-color: oklch(65% 0.19 25 / 0.3);
+}
+
+.stateTitle {
+  font-weight: 500;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+.stateBody {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  max-width: 380px;
+}
+
+.stateBody p {
+  margin: 0;
+}

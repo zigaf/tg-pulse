@@ -1,0 +1,186 @@
+.page {
+  min-height: 100vh;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 1.4rem 1.5rem 4rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 2.4rem;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.wordmark svg {
+  color: var(--color-accent-bright);
+}
+
+.topbarRight {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.userName {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.headingRow {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.4rem;
+}
+
+.heading {
+  font-size: 1.6rem;
+}
+
+.headingHint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.9rem;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.15rem;
+  backdrop-filter: blur(18px);
+  transition:
+    border-color var(--duration-fast) ease,
+    transform var(--duration-normal) var(--ease-out-expo),
+    box-shadow var(--duration-normal) var(--ease-out-expo);
+}
+
+.card:hover {
+  border-color: var(--color-border-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 44px oklch(30% 0.14 288 / 0.25);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 2px;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: oklch(98% 0 0);
+  background: linear-gradient(135deg, var(--color-accent), oklch(70% 0.15 230));
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.cardTitle {
+  font-weight: 600;
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardUsername {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.cardMeta {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.cardCount {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.cardArrow {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition: opacity var(--duration-fast) ease;
+}
+
+.card:hover .cardArrow {
+  opacity: 1;
+}
+
+.steps {
+  text-align: left;
+  margin: 0.4rem 0 1.1rem;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.steps li::marker {
+  color: var(--color-accent-bright);
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 1rem 1rem 3rem;
+  }
+
+  .topbar {
+    margin-bottom: 1.6rem;
+  }
+
+  .userName {
+    display: none;
+  }
+}

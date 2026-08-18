@@ -1,0 +1,128 @@
+/* Data table primitives, same visual language as the landing SourcesTable.
+   Column template comes from the consumer via the --cols custom property. */
+
+.scroll {
+  overflow-x: auto;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: var(--min-width, 0);
+}
+
+.headRow {
+  display: grid;
+  grid-template-columns: var(--cols);
+  gap: 0.8rem;
+  padding: 0 0.9rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.8rem;
+  background: oklch(19% 0.02 290 / 0.45);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.9rem;
+  transition: background var(--duration-fast) ease, border-color var(--duration-fast) ease;
+}
+
+.rowHover:hover {
+  background: oklch(23% 0.025 290 / 0.6);
+  border-color: var(--color-border);
+}
+
+.alignRight {
+  text-align: right;
+}
+
+.num {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.numStrong {
+  composes: num;
+  color: var(--color-text);
+}
+
+.good {
+  color: var(--color-positive);
+}
+
+.bad {
+  color: var(--color-negative);
+}
+
+.tick {
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.cellMain {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.cellTitle {
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cellSub {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* sortable header button */
+.sortBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color var(--duration-fast) ease;
+}
+
+.sortBtn:hover,
+.sortActive {
+  color: var(--color-text);
+}
+
+.sortBtn:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

@@ -10,12 +10,15 @@ const prisma = getPrisma();
 bot.command('start', async (ctx) => {
   await ctx.reply(
     [
-      '👋 Привет! Я — TGPulse, трекер источников подписчиков.',
+      'Hi! I am TGPulse, a subscriber source tracker for Telegram channels.',
       '',
-      'Чтобы начать:',
-      '1. Добавь меня администратором в свой канал (достаточно права «приглашение по ссылке»)',
-      '2. Вернись сюда — канал появится автоматически',
-      '3. Создавай трекинг-ссылки и смотри, откуда приходят подписчики',
+      'Get started:',
+      '1. Add me as an admin to your channel (the "invite users via link" permission is enough)',
+      '2. The channel connects automatically',
+      '3. Run /newlink to create a tracking link for an ad or a post',
+      '4. Run /stats to see joins, leaves and top sources for the last 7 days',
+      '',
+      'You also get a daily report every morning at 09:00 UTC.',
     ].join('\n'),
   );
 });
@@ -69,7 +72,7 @@ bot.on('my_chat_member', async (ctx) => {
   await prisma.channel.create({
     data: {
       tgChatId: BigInt(chat.id),
-      title: chat.title ?? 'Канал',
+      title: chat.title ?? 'Channel',
       username: 'username' in chat ? chat.username : undefined,
       workspaceId: membership.workspaceId,
       botStatus: BotStatus.ACTIVE,
@@ -78,7 +81,7 @@ bot.on('my_chat_member', async (ctx) => {
 
   await bot.api.sendMessage(
     from.id,
-    `✅ Канал «${chat.title}» подключён! Теперь создай трекинг-ссылку: /newlink`,
+    `Channel "${chat.title}" is connected. Create your first tracking link: /newlink`,
   ).catch(() => {
     // user may not have started the bot in DM — fine, they'll see the channel in the dashboard
   });

@@ -1,0 +1,203 @@
+.pageHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.3rem;
+}
+
+.pageTitle {
+  font-size: 1.35rem;
+}
+
+.refreshing {
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) ease;
+  pointer-events: none;
+}
+
+/* ---------- segment control ---------- */
+
+.segments {
+  display: flex;
+  gap: 2px;
+  background: oklch(22% 0.02 290 / 0.6);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.segment {
+  font: inherit;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  padding: 0.26rem 0.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
+}
+
+.segment:hover {
+  color: var(--color-text);
+}
+
+.segment:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 1px;
+}
+
+.segmentActive {
+  background: oklch(62% 0.21 288 / 0.2);
+  color: var(--color-text);
+}
+
+/* ---------- stat tiles ---------- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.7rem;
+  margin-bottom: 0.9rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem;
+  backdrop-filter: blur(14px);
+}
+
+.tileLabel {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+}
+
+.tileValue {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.4rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.valuePositive {
+  color: var(--color-positive);
+}
+
+.valueNegative {
+  color: var(--color-negative);
+}
+
+/* ---------- chart ---------- */
+
+.chartCard {
+  padding: 1.1rem 1rem 0.7rem;
+  margin-bottom: 1.8rem;
+}
+
+.chartWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 0 0.4rem 0.4rem;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.tooltip {
+  background: oklch(16% 0.02 290 / 0.96);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.75rem;
+  box-shadow: 0 12px 32px oklch(6% 0.02 290 / 0.6);
+}
+
+.tooltipDate {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+}
+
+.tooltipDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.tooltipKey {
+  color: var(--color-text-muted);
+  min-width: 44px;
+}
+
+.tooltipValue {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- sources section ---------- */
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  margin-bottom: 0.7rem;
+}
+
+.sectionTitle {
+  font-size: 0.98rem;
+}
+
+.sectionHint {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.sourceText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .tiles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tileValue {
+    font-size: 1.2rem;
+  }
+}

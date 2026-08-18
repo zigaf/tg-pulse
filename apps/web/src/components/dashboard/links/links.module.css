@@ -1,0 +1,226 @@
+.pageHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.3rem;
+}
+
+.pageTitle {
+  font-size: 1.35rem;
+}
+
+.actionError {
+  font-size: 0.78rem;
+  color: var(--color-negative);
+  background: oklch(65% 0.19 25 / 0.08);
+  border: 1px solid oklch(65% 0.19 25 / 0.3);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+/* ---------- rows ---------- */
+
+.rowRevoked {
+  opacity: 0.55;
+}
+
+.labelCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.urlCell {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.url {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copyBtn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  color: var(--color-text-muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+
+.copyBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: oklch(26% 0.03 290 / 0.6);
+}
+
+.copyBtn:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 1px;
+}
+
+.copyBtnDone {
+  color: var(--color-positive);
+}
+
+.actionsCell {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.revokeBtn {
+  font: inherit;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+
+.revokeBtn:hover {
+  color: var(--color-negative);
+  border-color: oklch(65% 0.19 25 / 0.4);
+}
+
+.revokeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.revokeConfirm {
+  color: var(--color-negative);
+  border-color: oklch(65% 0.19 25 / 0.55);
+  background: oklch(65% 0.19 25 / 0.1);
+}
+
+/* ---------- modal ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background: oklch(8% 0.01 290 / 0.7);
+  backdrop-filter: blur(6px);
+}
+
+.modal {
+  width: min(440px, 100%);
+  background: oklch(15% 0.018 290 / 0.98);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  padding: 1.3rem 1.4rem 1.4rem;
+  box-shadow:
+    0 40px 90px oklch(6% 0.02 290 / 0.8),
+    inset 0 1px 0 oklch(100% 0 0 / 0.07);
+}
+
+.modalHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+
+.modalTitle {
+  font-size: 1.05rem;
+}
+
+.modalClose {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
+}
+
+.modalClose:hover {
+  color: var(--color-text);
+  background: oklch(26% 0.03 290 / 0.6);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  font: inherit;
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  padding: 0.1rem 0;
+  cursor: pointer;
+  transition: color var(--duration-fast) ease;
+}
+
+.disclosure:hover {
+  color: var(--color-text);
+}
+
+.caret,
+.caretOpen {
+  transition: transform var(--duration-fast) ease;
+}
+
+.caretOpen {
+  transform: rotate(180deg);
+}
+
+.utmGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  border-left: 2px solid oklch(62% 0.21 288 / 0.3);
+  padding-left: 0.9rem;
+}
+
+.formError {
+  font-size: 0.76rem;
+  color: var(--color-negative);
+}
+
+.modalFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+}

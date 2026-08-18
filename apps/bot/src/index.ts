@@ -3,7 +3,14 @@ import { webhookCallback } from 'grammy';
 import { createHash } from 'node:crypto';
 import { getPrisma } from '@tgpulse/db';
 import { bot } from './bot';
+import { registerNewlink } from './commands/newlink';
+import { registerStats } from './commands/stats';
 import { config } from './config';
+import { registerReports, startReportCron } from './reports';
+
+registerNewlink(bot);
+registerStats(bot);
+registerReports(bot);
 
 const app = Fastify({ logger: true });
 const prisma = getPrisma();
@@ -49,6 +56,8 @@ async function main() {
   const allowedUpdates = ['message', 'chat_member', 'my_chat_member', 'callback_query'] as const;
 
   await app.listen({ port: config.port, host: '0.0.0.0' });
+
+  startReportCron();
 
   if (config.webhookSecret && config.publicUrl) {
     await bot.api.setWebhook(`${config.publicUrl}/webhook/${config.webhookSecret}`, {
