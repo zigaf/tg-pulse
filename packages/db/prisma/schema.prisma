@@ -76,6 +76,9 @@ model Channel {
   subscribers Subscriber[]
   events      MemberEvent[]
   postbacks   Postback[]
+  sales       SaleEvent[]
+  apiKeys     ChannelApiKey[]
+  alertSubs   AlertSubscription[]
 
   @@map("channels")
 }
@@ -170,6 +173,60 @@ model Postback {
 
   @@index([channelId])
   @@map("postbacks")
+}
+
+/** Revenue events uploaded or pushed by webhook: closes the loop from source to money. */
+model SaleEvent {
+  id          String    @id @default(cuid())
+  channelId   String    @map("channel_id")
+  /** Buyer identity as provided: Telegram id preferred, username as fallback. */
+  tgUserId    BigInt?   @map("tg_user_id")
+  username    String?
+  amount      Decimal   @db.Decimal(12, 2)
+  currency    String    @default("USD")
+  kind        SaleKind  @default(PURCHASE)
+  externalId  String?   @map("external_id")
+  occurredAt  DateTime  @map("occurred_at")
+  /** Resolved at ingest time from the subscriber's attribution. */
+  linkId      String?   @map("link_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  channel     Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, externalId])
+  @@index([channelId, occurredAt])
+  @@index([linkId])
+  @@map("sale_events")
+}
+
+enum SaleKind {
+  LEAD
+  PURCHASE
+  REFUND
+}
+
+/** Per-channel ingest key for the sales webhook (rotatable, never reused). */
+model ChannelApiKey {
+  id        String    @id @default(cuid())
+  channelId String    @map("channel_id")
+  keyHash   String    @unique @map("key_hash") // sha256 of the raw key
+  prefix    String // first chars, shown in UI for identification
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+  channel   Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+  @@map("channel_api_keys")
+}
+
+/** Instant join/leave alert opt-in, persisted across bot restarts. */
+model AlertSubscription {
+  channelId String   @map("channel_id")
+  tgUserId  BigInt   @map("tg_user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@id([channelId, tgUserId])
+  @@map("alert_subscriptions")
 }
 
 model Subscriber {

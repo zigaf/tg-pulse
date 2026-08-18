@@ -1,5 +1,5 @@
 import { getPrisma, Prisma } from '@tgpulse/db';
-import { assertPublicHttpUrl } from './net-guard';
+import { safeFetch } from './net-guard';
 
 const prisma = getPrisma();
 
@@ -48,19 +48,15 @@ async function findAttributionClick(linkId: string) {
 
 async function sendPostback(name: string, url: string, allowRetry: boolean): Promise<void> {
   try {
-    await assertPublicHttpUrl(url); // SSRF guard: user-supplied URL
-    const res = await fetch(url, {
-      method: 'GET',
-      redirect: 'follow',
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
+    // SSRF guard: user-supplied URL, re-validated on every redirect hop
+    const res = await safeFetch(url, FETCH_TIMEOUT_MS);
     console.log(`[postback] ${name} ${res.status} ${url}`);
     if (res.status >= 500 && allowRetry) {
       scheduleRetry(name, url);
     }
   } catch (e) {
     const reason = e instanceof Error ? e.message : String(e);
-    console.log(`[postback] ${name} FAIL (${reason}) ${url}`);
+    console.error(`[postback] ${name} FAIL (${reason}) ${url}`);
     if (allowRetry) {
       scheduleRetry(name, url);
     }
@@ -68,7 +64,7 @@ async function sendPostback(name: string, url: string, allowRetry: boolean): Pro
 }
 
 function scheduleRetry(name: string, url: string): void {
-  console.log(`[postback] ${name} retry in ${RETRY_DELAY_MS / 1000}s`);
+  console.error(`[postback] ${name} retry in ${RETRY_DELAY_MS / 1000}s`);
   const timer = setTimeout(() => {
     void sendPostback(name, url, false);
   }, RETRY_DELAY_MS);

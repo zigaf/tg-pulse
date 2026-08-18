@@ -36,6 +36,34 @@ function isPrivateIp(ip: string): boolean {
   );
 }
 
+const MAX_REDIRECTS = 3;
+
+/**
+ * Fetch a user-supplied URL with the guard re-applied on every redirect hop.
+ * `redirect: 'follow'` would let a public host bounce us into the private network.
+ */
+export async function safeFetch(rawUrl: string, timeoutMs: number): Promise<Response> {
+  let url = rawUrl;
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
+    await assertPublicHttpUrl(url);
+    const res = await fetch(url, {
+      method: 'GET',
+      redirect: 'manual',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+
+    if (res.status < 300 || res.status >= 400) return res;
+
+    const location = res.headers.get('location');
+    if (!location) return res;
+    url = new URL(location, url).toString();
+  }
+
+  throw new Error('too many redirects');
+}
+
 /** Throws if the URL must not be fetched server-side. */
 export async function assertPublicHttpUrl(rawUrl: string): Promise<void> {
   let url: URL;
