@@ -33,6 +33,7 @@ model Workspace {
   channels  Channel[]
   subscriptions Subscription[]
   payments      PaymentEvent[]
+  invites       WorkspaceInvite[]
 
   @@map("workspaces")
 }
@@ -112,6 +113,42 @@ enum WorkspaceRole {
   VIEWER
 }
 
+/** One-time invite link into a workspace; consumed on accept. */
+model WorkspaceInvite {
+  id          String        @id @default(cuid())
+  workspaceId String        @map("workspace_id")
+  token       String        @unique
+  role        WorkspaceRole @default(VIEWER)
+  createdById String        @map("created_by_id")
+  expiresAt   DateTime      @map("expires_at")
+  acceptedAt  DateTime?     @map("accepted_at")
+  acceptedById String?      @map("accepted_by_id")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("workspace_invites")
+}
+
+/** Read-only public report link for clients; no session required. */
+model ShareLink {
+  id         String    @id @default(cuid())
+  channelId  String    @map("channel_id")
+  token      String    @unique
+  label      String?
+  /** Days of history the recipient may see. */
+  windowDays Int       @default(30) @map("window_days")
+  expiresAt  DateTime? @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdById String   @map("created_by_id")
+  viewCount  Int       @default(0) @map("view_count")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  channel    Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+  @@map("share_links")
+}
+
 // ---------- Channels ----------
 
 model Channel {
@@ -133,6 +170,7 @@ model Channel {
   sales       SaleEvent[]
   apiKeys     ChannelApiKey[]
   alertSubs   AlertSubscription[]
+  shareLinks  ShareLink[]
 
   @@map("channels")
 }
@@ -151,6 +189,8 @@ model TrackedLink {
   channelId     String       @map("channel_id")
   label         String // human name: "посев @channel 18.08"
   creative      String? // creative tag
+  /** Media buyer or contractor who owns this placement; enables buyer comparison. */
+  buyer         String?
   utmSource     String?      @map("utm_source")
   utmMedium     String?      @map("utm_medium")
   utmCampaign   String?      @map("utm_campaign")
