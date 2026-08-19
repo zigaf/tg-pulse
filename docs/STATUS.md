@@ -33,6 +33,12 @@ join/leave alerts persisted in the database.
 **Dashboard.** Telegram login, channel list, overview (tiles, joins/leaves chart, source breakdown), links
 with pixel install, postbacks, subscribers, revenue.
 
+**Monetization.** Free/Pro/Agency with workspace-level quotas (see docs/BILLING.md). Payment runs on
+Telegram Stars inside the bot (`/upgrade`, `/billing`): recurring invoice with a one-off fallback,
+pre-checkout validation, idempotent activation keyed by the Telegram charge id, daily expiry sweep.
+The API gates quota and feature access with HTTP 402, the dashboard shows plan, quota rails, plan table,
+payment history and upgrade cards on locked sections.
+
 ## Known gaps / next
 
 1. Shared `createTrackedLink` helper: slug and invite-link rules are implemented twice (web + bot).
@@ -40,4 +46,6 @@ with pixel install, postbacks, subscribers, revenue.
 3. Postback delivery status is stored but not surfaced in the dashboard yet.
 4. Telegram Login payloads have no replay protection beyond the 24h `auth_date` window.
 5. No security headers on the web app (CSP, HSTS, nosniff, referrer policy).
-6. Phase 6 monetization: Telegram Stars in the bot first, Lemon Squeezy for cards on the site.
+6. Card payments (Lemon Squeezy) for buyers who do not want Stars; the provider enum is already in place.
+7. Stars payments are untested against a real charge: run one live Pro purchase and verify the receipt,
+   the subscription period and the renewal update.
