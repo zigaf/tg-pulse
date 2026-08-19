@@ -8,6 +8,7 @@ import { StickyCta } from '@/components/ui/StickyCta';
 import { ComparisonSection } from '@/components/sections/ComparisonSection';
 import { FaqSection } from '@/components/sections/FaqSection';
 import { FlowCurve } from '@/components/sections/FlowCurve';
+import { GlobalReachSection } from '@/components/sections/GlobalReachSection';
 import { PainSection } from '@/components/sections/PainSection';
 import { PricingSection } from '@/components/sections/PricingSection';
 import styles from './page.module.css';
@@ -154,6 +155,8 @@ export default function LandingPage() {
               </div>
             </Reveal>
           </section>
+
+          <GlobalReachSection />
 
           <div id="pricing">
             <PricingSection />

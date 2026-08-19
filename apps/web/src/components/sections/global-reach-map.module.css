@@ -1,0 +1,184 @@
+/**
+ * The dot field of the Global reach section: the shared land path, the stage map
+ * layer and the phone atmosphere layer, plus the market markers drawn on top.
+ *
+ * Arcs, hub and strands are in global-reach-flow.module.css; layout is in
+ * global-reach.module.css.
+ */
+
+/* Zero-size carrier for the shared dot path and the glow filter. */
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------- dot field */
+
+.map {
+  display: block;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 780 / 440;
+  overflow: visible;
+}
+
+.dotLayer {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  mask-image: radial-gradient(ellipse 76% 84% at 42% 50%, #000 42%, transparent 100%),
+    linear-gradient(90deg, transparent 0, #000 5%, #000 72%, transparent 97%);
+  -webkit-mask-image: radial-gradient(ellipse 76% 84% at 42% 50%, #000 42%, transparent 100%),
+    linear-gradient(90deg, transparent 0, #000 5%, #000 72%, transparent 97%);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}
+
+.field {
+  opacity: 0;
+}
+
+[data-reach-inview] .field {
+  animation: reachFade 900ms var(--ease-out-expo) 0.15s forwards;
+}
+
+/* stroke-dasharray comes from DOT_DASH so the grid pitch has one owner. */
+.dots,
+.hotDots,
+.ambientField {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 2.1;
+}
+
+.dots {
+  stroke: var(--map-dot);
+}
+
+.hotDots {
+  stroke: var(--map-dot-hot);
+}
+
+/* Phones: the same field, scaled down through <use>, sitting behind the heading. */
+.ambient {
+  display: none;
+  position: absolute;
+  top: calc(var(--space-section) - 1rem);
+  left: 50%;
+  width: 340px;
+  height: auto;
+  transform: translateX(-50%);
+  z-index: -1;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse 90% 100% at 50% 40%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 100% at 50% 40%, #000 30%, transparent 100%);
+}
+
+/* Full strength violet at 20% so the layer reads as haze, not as a chart.
+   --map-dot already carries alpha, which would leave this all but invisible. */
+.ambientField {
+  stroke: oklch(70% 0.11 288);
+  stroke-width: 2.25;
+  opacity: 0.2;
+}
+
+/* -------------------------------------------------------------- markers */
+
+.marker {
+  cursor: default;
+}
+
+.marker:focus {
+  outline: none;
+}
+
+.markerDot,
+.markerGlow {
+  fill: var(--color-accent-bright);
+}
+
+.markerPulse {
+  fill: none;
+  stroke: var(--color-accent-bright);
+  stroke-width: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: reachRing 4.8s var(--ease-out-expo) infinite;
+  animation-delay: var(--d);
+}
+
+.markerLabel {
+  fill: var(--color-text-muted);
+  font-size: 0.63rem;
+  paint-order: stroke fill;
+  stroke: var(--color-bg);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+}
+
+.tag {
+  opacity: 0;
+  transition: opacity var(--duration-fast) linear;
+}
+
+.tag rect {
+  fill: oklch(15% 0.018 290 / 0.92);
+  stroke: var(--color-border-accent);
+  stroke-width: 0.6;
+}
+
+.tag text {
+  fill: var(--color-text);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.55rem;
+}
+
+.marker:hover .tag,
+.marker:focus-visible .tag {
+  opacity: 1;
+}
+
+.marker:focus-visible .markerDot {
+  stroke: var(--color-text);
+  stroke-width: 1.2;
+}
+
+/* CSS module keyframe names are file scoped, so each module keeps its own copy. */
+
+@keyframes reachFade {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes reachRing {
+  from {
+    transform: scale(0.3);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+/* Phone: the map stops being a diagram and becomes atmosphere. */
+@media (max-width: 640px) {
+  .ambient {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field {
+    opacity: 1;
+  }
+
+  .markerPulse {
+    display: none;
+  }
+}

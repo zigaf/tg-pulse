@@ -1,0 +1,150 @@
+/**
+ * Shell and stage grid for the Global reach section.
+ * The status panel is in global-reach-panel.module.css, the diagram in
+ * global-reach-map.module.css and global-reach-flow.module.css.
+ */
+
+.section {
+  --map-dot: oklch(58% 0.05 290 / 0.32);
+  --map-dot-hot: oklch(68% 0.13 288 / 0.55);
+  --status-live: var(--color-positive);
+  --status-build: var(--color-warning);
+  --status-postback: var(--color-accent-bright);
+  --status-none: oklch(70% 0.015 290 / 0.45);
+  --row-h: 56px;
+  --gutter: 60px;
+  --panel-w: 340px;
+
+  position: relative;
+  isolation: isolate;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: var(--space-section) 1.5rem 0;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 46% 56% at 74% 58%,
+    oklch(35% 0.14 288 / 0.26),
+    transparent 70%
+  );
+}
+
+.heading {
+  font-size: var(--text-h2);
+  max-width: 22ch;
+}
+
+.sub {
+  margin-top: 1.1rem;
+  color: var(--color-text-muted);
+  max-width: 44ch;
+}
+
+/* ---------------------------------------------------------------- stage */
+
+/* Row 2 is the only aligned row: the map box and the strand box are both
+   448px tall and centred, which lands the hub on the strand origin. */
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) calc(var(--gutter) + var(--panel-w));
+  align-items: center;
+  margin-top: var(--space-title-gap);
+}
+
+.colTitle {
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 1.1rem;
+}
+
+.mapTitle {
+  grid-area: 1 / 1;
+}
+
+.panelTitle {
+  grid-area: 1 / 2;
+  padding-left: var(--gutter);
+}
+
+.mapCol {
+  position: relative;
+  grid-area: 2 / 1;
+  min-width: 0;
+}
+
+.linkCol {
+  grid-area: 2 / 2;
+  display: grid;
+  grid-template-columns: var(--gutter) var(--panel-w);
+}
+
+.strandsWrap {
+  position: relative;
+}
+
+.stageFoot {
+  grid-area: 3 / 2;
+  padding: 1.4rem 0 0 var(--gutter);
+}
+
+/* ------------------------------------------------------------ tablet */
+
+@media (max-width: 1023px) {
+  .stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mapTitle {
+    grid-area: 1 / 1;
+  }
+
+  .mapCol {
+    grid-area: 2 / 1;
+  }
+
+  .panelTitle {
+    grid-area: 3 / 1;
+    padding-left: 0;
+    margin-top: 1.6rem;
+  }
+
+  .linkCol {
+    grid-area: 4 / 1;
+    grid-template-columns: 1fr;
+  }
+
+  .stageFoot {
+    grid-area: 5 / 1;
+    padding-left: 0;
+  }
+
+  .strandsWrap {
+    display: flex;
+    justify-content: center;
+    height: 3rem;
+  }
+}
+
+/* ------------------------------------------------------------- phone */
+
+@media (max-width: 640px) {
+  .section {
+    --row-h: 64px;
+  }
+
+  .mapCol {
+    display: none;
+  }
+
+  .colTitle {
+    margin-bottom: 0.9rem;
+  }
+}

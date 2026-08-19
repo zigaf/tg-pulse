@@ -1,0 +1,214 @@
+/**
+ * The status rail panel of the Global reach section, its legend, and the market
+ * list that replaces the map on phones.
+ *
+ * Hover wiring reaches the matching strand through [data-reach-stage], which
+ * ReachStage always sets, because the strand lives in another CSS module file.
+ */
+
+/* ---------------------------------------------------------------- panel */
+
+.panel {
+  list-style: none;
+  padding: 44px 0 12px;
+}
+
+.row {
+  --rail: var(--status-none);
+
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 0.15rem;
+  height: var(--row-h);
+  padding-left: 0.85rem;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: background var(--duration-normal) linear;
+}
+
+[data-reach-inview] .row {
+  animation: reachRow 500ms var(--ease-out-expo) calc(1.2s + 60ms * var(--i)) forwards;
+}
+
+.row[data-kind='live'] {
+  --rail: var(--status-live);
+}
+
+.row[data-kind='building'] {
+  --rail: var(--status-build);
+}
+
+.row[data-kind='postback'] {
+  --rail: var(--status-postback);
+}
+
+.rail {
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 2px;
+  background: var(--rail);
+  transform-origin: left center;
+  transition: transform var(--duration-normal) var(--ease-out-expo);
+}
+
+.row:hover {
+  background: oklch(62% 0.21 288 / 0.05);
+}
+
+.row:hover .rail {
+  transform: scaleX(1.6);
+}
+
+/* Row to strand wiring: hovering a platform lifts its own line only. */
+[data-reach-stage]:has(.row[data-i='0']:hover) [data-strand='0'],
+[data-reach-stage]:has(.row[data-i='1']:hover) [data-strand='1'],
+[data-reach-stage]:has(.row[data-i='2']:hover) [data-strand='2'],
+[data-reach-stage]:has(.row[data-i='3']:hover) [data-strand='3'],
+[data-reach-stage]:has(.row[data-i='4']:hover) [data-strand='4'] {
+  opacity: 0.9;
+}
+
+.rowHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.rowName {
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.rowStatus {
+  flex: none;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--rail);
+}
+
+.rowNote {
+  font-size: 0.68rem;
+  line-height: 1.3;
+  color: var(--color-text-muted);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  list-style: none;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--color-text-muted);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.legend li[data-kind='live'] svg {
+  color: var(--status-live);
+}
+
+.legend li[data-kind='building'] svg {
+  color: var(--status-build);
+}
+
+.legend li[data-kind='postback'] svg {
+  color: var(--status-postback);
+}
+
+.legend li[data-kind='none'] svg {
+  color: var(--status-none);
+}
+
+.promise {
+  margin-top: 0.7rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------- market list (phone) */
+
+/* Screen-reader copy of the map above the phone breakpoint, real content below it. */
+.marketList {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  list-style: none;
+}
+
+.marketItem {
+  display: grid;
+  grid-template-columns: 4px 1fr;
+  align-items: baseline;
+  column-gap: 0.5rem;
+}
+
+.marketDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-accent-bright);
+  transform: translateY(-2px);
+}
+
+.marketName {
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.marketBuys {
+  grid-column: 2;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.56rem;
+  color: var(--color-text-muted);
+}
+
+@keyframes reachRow {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  /* Without a cap the status column drifts a screen away from the platform name. */
+  .panel {
+    padding: 0;
+    max-width: 34rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .marketList {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    grid-area: 2 / 1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row {
+    opacity: 1;
+    transform: none;
+  }
+}

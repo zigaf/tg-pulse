@@ -1,0 +1,266 @@
+/**
+ * The flow of the Global reach section: inbound arcs from each market, the hub on
+ * the column seam, and the outbound strands to the platform panel.
+ *
+ * Draw-in animations key off [data-reach-inview], set once by ReachStage, so the
+ * rules survive being split across several CSS module files.
+ */
+
+/* ----------------------------------------------------------------- arcs */
+
+.stacked {
+  display: none;
+}
+
+.arcBase {
+  fill: none;
+  stroke: var(--color-bg);
+  stroke-width: 5;
+  opacity: 0.55;
+}
+
+.arc,
+.arcPulse,
+.strand,
+.strandPulse {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.arc {
+  stroke: var(--color-accent);
+  stroke-width: 1;
+  opacity: 0.34;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+[data-reach-inview] .arc {
+  animation: reachDraw 1200ms var(--ease-out-expo) calc(90ms * var(--i)) forwards;
+}
+
+.arcPulse {
+  stroke: var(--color-accent-bright);
+  stroke-width: 1.8;
+  stroke-dasharray: 0.05 0.95;
+  stroke-dashoffset: 1;
+  opacity: 0;
+  animation: reachRun var(--dur) linear infinite;
+  animation-delay: calc(-0.85s * var(--i));
+}
+
+[data-reach-inview] .arcPulse {
+  opacity: 0.95;
+  transition: opacity 500ms linear 1.15s;
+}
+
+/* ------------------------------------------------------------------ hub */
+
+.hubCore,
+.hubGlow {
+  fill: var(--color-accent-bright);
+}
+
+.hubRing {
+  fill: none;
+  stroke: var(--color-accent-bright);
+  stroke-width: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: reachRing 2.4s var(--ease-out-expo) infinite;
+}
+
+.hubRingLate {
+  animation-delay: 1.2s;
+}
+
+.hubLabel {
+  fill: var(--color-text-muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+}
+
+/* ------------------------------------------------------------------ hub */
+
+.hubCore,
+.hubGlow {
+  fill: var(--color-accent-bright);
+}
+
+.hubRing {
+  fill: none;
+  stroke: var(--color-accent-bright);
+  stroke-width: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: reachRing 2.4s var(--ease-out-expo) infinite;
+}
+
+.hubRingLate {
+  animation-delay: 1.2s;
+}
+
+.hubLabel {
+  fill: var(--color-text-muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+}
+
+/* -------------------------------------------------------------- strands */
+
+.strands {
+  display: block;
+  width: var(--gutter);
+  height: 448px;
+  overflow: visible;
+}
+
+.strandGroup {
+  transition: opacity var(--duration-normal) linear;
+}
+
+.strand {
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.live,
+.postback {
+  stroke: var(--color-accent);
+  opacity: 0.5;
+}
+
+.building {
+  stroke: var(--color-warning);
+  opacity: 0.5;
+  stroke-dasharray: 3 5;
+  stroke-dashoffset: 0;
+}
+
+.none {
+  display: none;
+}
+
+[data-reach-inview] .live,
+[data-reach-inview] .postback {
+  animation: reachDraw 900ms var(--ease-out-expo) calc(1.1s + 80ms * var(--i)) forwards;
+}
+
+.strandPulse {
+  stroke: var(--color-accent-bright);
+  stroke-width: 2;
+  stroke-dasharray: 0.12 0.88;
+  stroke-dashoffset: 1;
+  opacity: 0;
+  animation: reachRun 2.4s linear infinite;
+  animation-delay: calc(0.35s * var(--i));
+}
+
+[data-reach-inview] .strandPulse {
+  opacity: 0.9;
+  transition: opacity 500ms linear 1.4s;
+}
+
+.stub {
+  stroke: oklch(70% 0.015 290 / 0.35);
+  stroke-width: 1.5;
+}
+
+/* Phones and tablets swap the strand fan for a single travelling spine. */
+.spine {
+  display: none;
+  position: relative;
+  width: 1px;
+  overflow: hidden;
+  background: linear-gradient(180deg, transparent, var(--color-accent-bright), transparent);
+}
+
+.spine::after {
+  content: '';
+  position: absolute;
+  inset-inline: -1px;
+  top: 0;
+  height: 28%;
+  background: var(--color-accent-bright);
+  filter: blur(1px);
+  animation: reachSpine 3s linear infinite;
+}
+
+/* ----------------------------------------------------------- animations */
+
+@keyframes reachDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes reachRun {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes reachRing {
+  from {
+    transform: scale(0.3);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes reachSpine {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(400%);
+  }
+}
+
+/* Tablet: the panel drops below the map, so the fan becomes one spine. */
+@media (max-width: 1023px) {
+  .wide {
+    display: none;
+  }
+
+  .stacked {
+    display: block;
+  }
+
+  .strands {
+    display: none;
+  }
+
+  .spine {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arc,
+  .strand {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
+
+  /* The Google dash is meaning, not motion: it stays. */
+  .building {
+    stroke-dasharray: 3 5;
+  }
+
+  .arcPulse,
+  .strandPulse,
+  .hubRing,
+  .spine::after {
+    display: none;
+  }
+}
