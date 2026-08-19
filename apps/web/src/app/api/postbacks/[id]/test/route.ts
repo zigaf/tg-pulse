@@ -31,10 +31,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       return jsonError(400, `URL not allowed: ${error instanceof Error ? error.message : 'invalid'}`);
     }
 
-    let response: Response;
+    let status: number;
     try {
       // Guard is re-applied on each redirect hop inside safeFetch
-      response = await safeFetch(url, TEST_TIMEOUT_MS);
+      ({ status } = await safeFetch(url, TEST_TIMEOUT_MS));
     } catch (error) {
       const isTimeout = error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
       const detail = isTimeout
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       return jsonError(502, `Postback endpoint unreachable: ${detail}`);
     }
 
-    return jsonOk({ status: response.status });
+    return jsonOk({ status });
   } catch (error) {
     return handleRouteError(error);
   }

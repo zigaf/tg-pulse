@@ -10,6 +10,7 @@ import {
   verifyTelegramLogin,
 } from '@/server/auth';
 import { handleRouteError, jsonError, jsonOk, parseOrThrow, readJsonBody } from '@/server/http';
+import { clientIp, enforceRateLimit } from '@/server/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -28,6 +29,8 @@ function optionalString(value: unknown): string | undefined {
 
 export async function POST(req: NextRequest) {
   try {
+    // Unauthenticated endpoint that does HMAC work and writes a user: keep abuse cheap to absorb.
+    enforceRateLimit(`login:${clientIp(req)}`, 20, 60_000);
     const body = parseOrThrow(loginSchema, await readJsonBody(req));
 
     // Only scalar fields participate in the signature check (mirrors what the widget signs).

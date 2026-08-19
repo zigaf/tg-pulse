@@ -44,6 +44,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     ]);
 
     const origin = requestOrigin(req);
+    // Invite tokens are bearer credentials for a role: viewers get metadata only.
+    const canSeeTokens = role === 'OWNER' || role === 'ADMIN';
 
     return jsonOk({
       // Lets the UI hide actions the caller may not perform without a second request.
@@ -51,7 +53,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       // Seat quota of the plan; pending invites are already counted against it.
       limit: entitlements.limits.members,
       members: members.map(toMemberDto),
-      invites: invites.map((invite) => toInviteDto(invite, origin)),
+      invites: invites.map((invite) => toInviteDto(invite, origin, canSeeTokens)),
     });
   } catch (error) {
     return handleRouteError(error);

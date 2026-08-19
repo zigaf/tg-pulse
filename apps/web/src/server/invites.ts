@@ -68,13 +68,16 @@ export async function findAcceptableInviteOrThrow(
   return invite;
 }
 
-/** API-safe invite shape; the token is only useful to whoever may re-share the link. */
-export function toInviteDto(invite: WorkspaceInvite, origin: string) {
+/**
+ * API-safe invite shape. The token is a bearer credential: anyone who reads it can
+ * claim that seat with its role, so a viewer must never see it. Managers get the
+ * link, everyone else gets metadata only.
+ */
+export function toInviteDto(invite: WorkspaceInvite, origin: string, includeToken: boolean) {
   return {
     id: invite.id,
     role: invite.role,
-    token: invite.token,
-    url: inviteUrl(origin, invite.token),
+    ...(includeToken ? { token: invite.token, url: inviteUrl(origin, invite.token) } : {}),
     expiresAt: invite.expiresAt,
     createdAt: invite.createdAt,
   };

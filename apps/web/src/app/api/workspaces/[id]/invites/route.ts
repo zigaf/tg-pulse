@@ -45,7 +45,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       },
     });
 
-    return jsonOk(toInviteDto(invite, requestOrigin(req)));
+    // Only managers reach this route, so the freshly minted link is returned in full.
+    return jsonOk(toInviteDto(invite, requestOrigin(req), true));
   } catch (error) {
     return handleRouteError(error);
   }

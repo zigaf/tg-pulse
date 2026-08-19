@@ -1,9 +1,14 @@
 import type { NextRequest } from 'next/server';
 import { buildChannelReport } from '@/server/analytics';
 import { handleRouteError, jsonOk } from '@/server/http';
+import { clientIp, enforceRateLimit } from '@/server/rate-limit';
 import { recordShareView, resolvePublicShareLink } from '@/server/share-links';
 
 export const runtime = 'nodejs';
+
+/** Each open runs a full aggregation, so an unauthenticated caller gets a budget. */
+const RATE_LIMIT = 30;
+const RATE_WINDOW_MS = 60_000;
 /** Numbers must be current on every open, and the response is per-token anyway. */
 export const dynamic = 'force-dynamic';
 
@@ -14,9 +19,10 @@ export const dynamic = 'force-dynamic';
  * series and the source breakdown by label. It must never carry subscriber identities,
  * revenue, API keys, member data or internal ids.
  */
-export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   try {
     const { token } = await ctx.params;
+    enforceRateLimit(`share:${clientIp(req)}`, RATE_LIMIT, RATE_WINDOW_MS);
     const share = await resolvePublicShareLink(token);
 
     const report = await buildChannelReport(share.channel.id, share.windowDays);

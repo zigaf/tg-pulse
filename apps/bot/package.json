@@ -13,7 +13,8 @@
     "@tgpulse/db": "*",
     "fastify": "^5.2.1",
     "grammy": "^1.36.1",
-    "node-cron": "^4.6.0"
+    "node-cron": "^4.6.0",
+    "undici": "^7.29.0"
   },
   "devDependencies": {
     "@types/node-cron": "^3.0.11",
