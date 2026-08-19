@@ -1,0 +1,43 @@
+# TGPulse status
+
+Live: web https://web-production-1001b.up.railway.app · bot @tgpulse_app_bot · repo zigaf/tg-pulse
+Railway project `tg-pulse`: services `web`, `bot`, Postgres. One `railway.json`, role switched by `SERVICE_ROLE`.
+
+## Shipped
+
+**Attribution core.** Bot added as channel admin connects the channel, records the real member count
+(`getChatMemberCount`) as a baseline and reconciles it every 6 hours. Every join and leave arrives as a
+`chat_member` update and is stored with its source: joins through our unique invite links are attributed
+deterministically, the rest fall into organic.
+
+**Tracking links.** Created from the bot (`/newlink`) or the dashboard. Redirect `go/l/:slug` records the
+click, the pixel visitor id and ad click ids, then forwards to the invite link.
+
+**Landing pixel.** `<script async src="<go>/pixel.js" data-tgp="<slug>">` collects pageviews, UTM and
+yclid/gclid/fbclid/ttclid, persists them across pages and stitches the visitor id onto outbound go-links.
+
+**Conversion postbacks.** URL templates with macros (`{event} {slug} {label} {cid} {yclid} {gclid} {fbclid}
+{ttclid} {tg_user_id}`), fired on join/leave, one retry, delivery status persisted per postback. All
+server-side fetches of user URLs pass an SSRF guard that revalidates every redirect hop.
+
+**Revenue and ROMI.** Channel API keys (sha256 at rest, shown once), `POST /api/ingest/sales` webhook, CSV
+import, and a report joining sources to revenue, purchases, conversion and revenue per join.
+
+**Seeding antifraud.** Weighted signals (join bursts, 24h/7d churn, missing usernames, Premium share,
+click-to-join conversion) produce a 0-100 score and a verdict, with refund-ready wording in `/fraud`.
+
+**Bot UX.** English and Russian (`/language`, per-user locale, localized reports and alerts), onboarding
+checklist, breadcrumbs with back/close on every screen, sparklines and ranked source bars, instant
+join/leave alerts persisted in the database.
+
+**Dashboard.** Telegram login, channel list, overview (tiles, joins/leaves chart, source breakdown), links
+with pixel install, postbacks, subscribers, revenue.
+
+## Known gaps / next
+
+1. Shared `createTrackedLink` helper: slug and invite-link rules are implemented twice (web + bot).
+2. Overview aggregates events in JS per request; move to SQL grouping or cache before ~5-10k events/channel.
+3. Postback delivery status is stored but not surfaced in the dashboard yet.
+4. Telegram Login payloads have no replay protection beyond the 24h `auth_date` window.
+5. No security headers on the web app (CSP, HSTS, nosniff, referrer policy).
+6. Phase 6 monetization: Telegram Stars in the bot first, Lemon Squeezy for cards on the site.
