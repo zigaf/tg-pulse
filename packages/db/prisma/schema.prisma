@@ -171,6 +171,7 @@ model Channel {
   apiKeys     ChannelApiKey[]
   alertSubs   AlertSubscription[]
   shareLinks  ShareLink[]
+  integrations AdIntegration[]
 
   @@map("channels")
 }
@@ -250,6 +251,68 @@ model PixelEvent {
 enum PixelEventType {
   PAGEVIEW
   CLICK
+}
+
+/**
+ * Native ad-platform connection. Credentials are stored encrypted (AES-256-GCM);
+ * `config` holds non-secret settings such as pixel id, counter id or goal name.
+ */
+model AdIntegration {
+  id           String             @id @default(cuid())
+  channelId    String             @map("channel_id")
+  provider     AdProvider
+  isActive     Boolean            @default(true) @map("is_active")
+  credentials  String // encrypted JSON blob, never returned by the API
+  config       Json
+  /** Send joins, and optionally leaves as a negative signal where supported. */
+  sendJoins    Boolean            @default(true) @map("send_joins")
+  lastSyncAt   DateTime?          @map("last_sync_at")
+  lastStatus   String?            @map("last_status")
+  lastError    String?            @map("last_error")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+  channel      Channel            @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  uploads      ConversionUpload[]
+
+  @@unique([channelId, provider])
+  @@map("ad_integrations")
+}
+
+enum AdProvider {
+  META_CAPI
+  YANDEX_METRIKA
+  GOOGLE_ADS
+  TIKTOK_EVENTS
+}
+
+/**
+ * Outbox for conversions owed to an ad platform. Written synchronously with the
+ * join event, delivered by a worker, so a platform outage never loses a conversion.
+ */
+model ConversionUpload {
+  id            String           @id @default(cuid())
+  integrationId String           @map("integration_id")
+  /** Stable dedup key shared with the platform (event_id / PurchaseID). */
+  eventKey      String           @map("event_key")
+  clickId       String?          @map("click_id")
+  occurredAt    DateTime         @map("occurred_at")
+  status        UploadStatus     @default(PENDING)
+  attempts      Int              @default(0)
+  lastError     String?          @map("last_error")
+  sentAt        DateTime?        @map("sent_at")
+  payload       Json
+  createdAt     DateTime         @default(now()) @map("created_at")
+  integration   AdIntegration    @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, eventKey])
+  @@index([status, createdAt])
+  @@map("conversion_uploads")
+}
+
+enum UploadStatus {
+  PENDING
+  SENT
+  FAILED
 }
 
 /** Server-to-server conversion postback template, fired on attributed joins. */
