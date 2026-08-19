@@ -39,6 +39,14 @@ pre-checkout validation, idempotent activation keyed by the Telegram charge id, 
 The API gates quota and feature access with HTTP 402, the dashboard shows plan, quota rails, plan table,
 payment history and upgrade cards on locked sections.
 
+**Team and sharing.** Workspace invites with one-time links and OWNER/ADMIN/VIEWER roles enforced on every
+mutating route. Public client report at `/r/<token>`: traffic numbers only, revocable, view counted.
+CSV exports for subscribers, links and events. Buyer tag on links with a comparison table.
+
+**Bot link tooling.** `/bulklinks` turns a pasted list of placements into links plus a CSV for the ad
+manager. Landing-post links redirect straight to a channel post, validated against the channel's own
+identity so they cannot become an open redirect.
+
 ## Known gaps / next
 
 1. Shared `createTrackedLink` helper: slug and invite-link rules are implemented twice (web + bot).
@@ -46,6 +54,9 @@ payment history and upgrade cards on locked sections.
 3. Postback delivery status is stored but not surfaced in the dashboard yet.
 4. Telegram Login payloads have no replay protection beyond the 24h `auth_date` window.
 5. No security headers on the web app (CSP, HSTS, nosniff, referrer policy).
+8. Content module: post performance, ER, new vs returning cohorts (Prizma parity).
+9. White-label on client reports, the real reason to buy Agency.
+10. Rate limits are per process and in memory; they will need a shared store if the web app scales out.
 6. Card payments (Lemon Squeezy) for buyers who do not want Stars; the provider enum is already in place.
 7. Stars payments are untested against a real charge: run one live Pro purchase and verify the receipt,
    the subscription period and the renewal update.
