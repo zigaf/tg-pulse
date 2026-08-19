@@ -5,9 +5,11 @@ import { analyzeChannelLinks, analyzeLink } from '../fraud';
 import type { Dict } from '../i18n';
 import { backToFraudLinksMenu, CB, fraudChannelPickerMenu, fraudLinksMenu } from '../menus';
 import { getUserActiveChannels, getUserChannel, getUserLink } from '../queries';
+import { checkFraudReportAccess } from '../quota';
 import { safeEdit } from '../ui';
 import { fraudLinkButton, fraudLinksCard, fraudPickChannelCard, fraudReportCard } from '../views/fraud-view';
 import { editNoChannels, replyNoChannels } from './empty-states';
+import { editUpsell } from './upsell';
 
 /** Newest links only: older seedings are already settled and each one costs a few queries. */
 const FRAUD_LINKS_LIMIT = 8;
@@ -76,6 +78,14 @@ export function registerFraud(bot: Bot<BotContext>): void {
     ]);
     if (!report || !channel) {
       await ctx.answerCallbackQuery({ text: ctx.dict.fraud.linkUnavailable });
+      return;
+    }
+
+    // FREE gets the full report for the newest link only; the rest is an upsell.
+    const gate = await checkFraudReportAccess(channel, link.id);
+    if (!gate.allowed) {
+      await ctx.answerCallbackQuery();
+      await editUpsell(ctx, gate.plan, { kind: 'fraud' });
       return;
     }
 

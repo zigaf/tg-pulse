@@ -2,15 +2,28 @@
 
 import { PaperPlaneTilt, Plus } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { deletePostback, getPostbacks, testPostback, updatePostback, type ApiPostback } from '@/lib/api';
+import {
+  deletePostback,
+  getPostbacks,
+  isUpgradeRequired,
+  testPostback,
+  updatePostback,
+  type ApiPostback,
+} from '@/lib/api';
 import { EmptyState, ErrorState, SkeletonRows } from '../shared/States';
 import table from '../shared/table.module.css';
 import ui from '../shared/ui.module.css';
+import { UpgradeCard } from '../shared/UpgradeCard';
+import { useFeatureLocked, useWorkspace } from '../shell/workspace-context';
 import { AddPostbackModal } from './AddPostbackModal';
 import styles from './postbacks.module.css';
 
 const TABLE_STYLE = { '--cols': '1fr 1.8fr 0.75fr 0.45fr 1.3fr', '--min-width': '820px' } as CSSProperties;
 const CONFIRM_RESET_MS = 3000;
+
+const UPGRADE_TITLE = 'Postbacks are part of Pro';
+const UPGRADE_BODY =
+  'Send every join and leave straight into your ad platform or tracker, so conversions land in the right campaign instead of a spreadsheet.';
 
 type TestResult = { pending: true } | { pending: false; status?: number; error?: string };
 
@@ -98,6 +111,7 @@ function PostbackRow({
 export function PostbacksView({ channelId }: { channelId: string }) {
   const [postbacks, setPostbacks] = useState<ApiPostback[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLockedByApi, setIsLockedByApi] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -106,12 +120,28 @@ export function PostbacksView({ channelId }: { channelId: string }) {
   const [actionError, setActionError] = useState('');
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /**
+   * Listing stays open on FREE so a downgraded workspace still sees what it had, so the
+   * lock comes from the plan; a 402 on any postback call locks the section as well.
+   */
+  const isLockedByPlan = useFeatureLocked('postbacks');
+  const workspace = useWorkspace();
+  const isLocked = isLockedByPlan || isLockedByApi;
+
   const load = useCallback(async () => {
     setError(null);
+    setIsLockedByApi(false);
     setPostbacks(null);
     const result = await getPostbacks(channelId);
-    if (result.ok) setPostbacks(result.data);
-    else setError(result.error);
+    if (result.ok) {
+      setPostbacks(result.data);
+      return;
+    }
+    if (isUpgradeRequired(result)) {
+      setIsLockedByApi(true);
+      return;
+    }
+    setError(result.error);
   }, [channelId]);
 
   useEffect(() => {
@@ -130,14 +160,16 @@ export function PostbacksView({ channelId }: { channelId: string }) {
       setPostbacks((previous) =>
         previous ? previous.map((item) => (item.id === postback.id ? result.data : item)) : previous,
       );
-    } else {
-      setActionError(result.error);
+      return;
     }
+    if (isUpgradeRequired(result)) setIsLockedByApi(true);
+    setActionError(result.error);
   };
 
   const handleTest = async (id: string) => {
     setTestResults((previous) => ({ ...previous, [id]: { pending: true } }));
     const result = await testPostback(id);
+    if (!result.ok && isUpgradeRequired(result)) setIsLockedByApi(true);
     setTestResults((previous) => ({
       ...previous,
       [id]: result.ok ? { pending: false, status: result.data.status } : { pending: false, error: result.error },
@@ -159,14 +191,17 @@ export function PostbacksView({ channelId }: { channelId: string }) {
     setDeletingId(null);
     if (result.ok) {
       setPostbacks((previous) => (previous ? previous.filter((item) => item.id !== id) : previous));
-    } else {
-      setActionError(result.error);
+      return;
     }
+    if (isUpgradeRequired(result)) setIsLockedByApi(true);
+    setActionError(result.error);
   };
 
   const handleCreated = (postback: ApiPostback) => {
     setPostbacks((previous) => (previous ? [postback, ...previous] : [postback]));
   };
+
+  const hasPostbacks = postbacks !== null && postbacks.length > 0;
 
   return (
     <section aria-labelledby="postbacks-heading">
@@ -174,13 +209,19 @@ export function PostbacksView({ channelId }: { channelId: string }) {
         <h1 id="postbacks-heading" className={styles.pageTitle}>
           Postbacks
         </h1>
-        <button type="button" className={ui.btnPrimary} onClick={() => setIsModalOpen(true)}>
-          <Plus size={15} weight="bold" />
-          Add postback
-        </button>
+        {isLocked ? null : (
+          <button type="button" className={ui.btnPrimary} onClick={() => setIsModalOpen(true)}>
+            <Plus size={15} weight="bold" />
+            Add postback
+          </button>
+        )}
       </header>
 
-      {actionError ? (
+      {isLocked ? (
+        <UpgradeCard title={UPGRADE_TITLE} description={UPGRADE_BODY} workspaceId={workspace?.id} />
+      ) : null}
+
+      {actionError && !isLocked ? (
         <p className={styles.actionError} role="alert">
           {actionError}
         </p>
@@ -191,21 +232,23 @@ export function PostbacksView({ channelId }: { channelId: string }) {
           <ErrorState message={error} onRetry={() => void load()} />
         </div>
       ) : postbacks === null ? (
-        <SkeletonRows rows={4} height={46} />
-      ) : postbacks.length === 0 ? (
-        <div className={ui.card}>
-          <EmptyState icon={<PaperPlaneTilt size={26} weight="duotone" />} title="No postbacks yet">
-            <p>
-              A postback sends the subscription event to your ad platform or tracker by requesting a URL template
-              you define. Macros like {'{yclid}'} or {'{cid}'} are replaced with real values, so conversions land in
-              the right campaign.
-            </p>
-            <button type="button" className={ui.btn} onClick={() => setIsModalOpen(true)}>
-              <Plus size={14} weight="bold" />
-              Add postback
-            </button>
-          </EmptyState>
-        </div>
+        isLocked ? null : <SkeletonRows rows={4} height={46} />
+      ) : !hasPostbacks ? (
+        isLocked ? null : (
+          <div className={ui.card}>
+            <EmptyState icon={<PaperPlaneTilt size={26} weight="duotone" />} title="No postbacks yet">
+              <p>
+                A postback sends the subscription event to your ad platform or tracker by requesting a URL template
+                you define. Macros like {'{yclid}'} or {'{cid}'} are replaced with real values, so conversions land
+                in the right campaign.
+              </p>
+              <button type="button" className={ui.btn} onClick={() => setIsModalOpen(true)}>
+                <Plus size={14} weight="bold" />
+                Add postback
+              </button>
+            </EmptyState>
+          </div>
+        )
       ) : (
         <div className={table.scroll}>
           <div className={table.table} style={TABLE_STYLE}>

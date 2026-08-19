@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { assertChannelAccess } from '@/server/access';
 import { getSessionUserId } from '@/server/auth';
+import { assertFeature } from '@/server/entitlements';
 import { ApiError, handleRouteError, jsonError, jsonOk, parseOrThrow } from '@/server/http';
 import { readJsonBodyWithLimit } from '@/server/request-body';
 import { parseSalesCsv, recordSaleEvents } from '@/server/sales';
@@ -24,7 +25,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     if (!userId) return jsonError(401, 'Unauthorized');
 
     const { id: channelId } = await ctx.params;
-    await assertChannelAccess(userId, channelId);
+    const channel = await assertChannelAccess(userId, channelId);
+    // Gate before reading the body so an over-limit upload is not parsed for nothing.
+    await assertFeature(channel.workspaceId, 'revenue');
 
     const body = parseOrThrow(importSchema, await readJsonBodyWithLimit(req, MAX_BODY_BYTES));
     if (Buffer.byteLength(body.csv, 'utf8') > MAX_CSV_BYTES) {

@@ -3,7 +3,9 @@ import Fastify from 'fastify';
 import { webhookCallback } from 'grammy';
 import { createHash } from 'node:crypto';
 import { getPrisma } from '@tgpulse/db';
+import { startBillingCron } from './billing-sweep';
 import { bot } from './bot';
+import { registerBilling } from './commands/billing';
 import { registerChannels } from './commands/channels';
 import { registerFraud } from './commands/fraud';
 import { registerHelp } from './commands/help';
@@ -13,6 +15,7 @@ import { registerNewlink } from './commands/newlink';
 import { registerNotifications } from './commands/notifications';
 import { registerStart } from './commands/start';
 import { registerStats } from './commands/stats';
+import { registerUpgrade } from './commands/upgrade';
 import { config } from './config';
 import { registerFallback } from './fallback';
 import { getDict, type Dict, type Lang } from './i18n';
@@ -29,6 +32,8 @@ registerFraud(bot);
 registerNotifications(bot);
 registerStats(bot);
 registerNewlink(bot);
+registerUpgrade(bot);
+registerBilling(bot);
 registerReports(bot);
 registerFallback(bot); // must be last: unknown-input hints + catch-all callback answer + bot.catch
 
@@ -127,14 +132,23 @@ function commandList(dict: Dict): { command: string; description: string }[] {
     { command: 'channels', description: dict.commands.channels },
     { command: 'fraud', description: dict.commands.fraud },
     { command: 'notifications', description: dict.commands.notifications },
+    { command: 'upgrade', description: dict.commands.upgrade },
+    { command: 'billing', description: dict.commands.billing },
     { command: 'language', description: dict.commands.language },
     { command: 'help', description: dict.commands.help },
   ];
 }
 
 async function main() {
-  // chat_member updates are NOT delivered by default, they must be requested explicitly
-  const allowedUpdates = ['message', 'chat_member', 'my_chat_member', 'callback_query'] as const;
+  // chat_member updates are NOT delivered by default, they must be requested explicitly;
+  // pre_checkout_query is the same, and without it Stars payments never complete.
+  const allowedUpdates = [
+    'message',
+    'chat_member',
+    'my_chat_member',
+    'callback_query',
+    'pre_checkout_query',
+  ] as const;
 
   // Abuse throttling for the public endpoints (/px, /l/:slug); per-route limits opt in
   await app.register(rateLimit, {
@@ -148,6 +162,7 @@ async function main() {
 
   startReportCron();
   startMemberCountSync(bot);
+  startBillingCron();
 
   // Telegram keeps one command list per language_code, so both locales are published.
   await bot.api.setMyCommands(commandList(getDict('en')));

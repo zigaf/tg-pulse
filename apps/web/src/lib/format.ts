@@ -73,7 +73,17 @@ export function formatCompactMoney(value: number, currency: string): string {
   return moneyFormat(currency, true).format(value);
 }
 
-export const BOT_USERNAME = process.env.NEXT_PUBLIC_BOT_USERNAME || 'tgpulse_bot';
+/** ISO 4217 code Telegram uses for Stars. */
+export const STARS_CURRENCY = 'XTR';
+
+/** Payments are in Stars (XTR), everything else falls back to a real currency format. */
+export function formatPaymentAmount(value: number, currency: string): string {
+  const code = currency.toUpperCase();
+  if (code === STARS_CURRENCY) return `${formatNumber(value)} Stars`;
+  return formatMoney(value / 100, code);
+}
+
+export const BOT_USERNAME = process.env.NEXT_PUBLIC_BOT_USERNAME || 'tgpulse_app_bot';
 
 /** Public base of the go/pixel service (bot app); used to build client-side snippets. */
 export const GO_BASE =

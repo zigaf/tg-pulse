@@ -21,6 +21,12 @@ Billing is per workspace, with a channel quota. Not per channel.
 
 `FEATURES` and `LIMITS` live in one shared module per app; do not hardcode numbers in routes or handlers.
 
+Canonical keys, identical in `apps/bot/src/billing.ts`, `apps/web/src/server/entitlements.ts` and
+`apps/web/src/lib/billing.ts`:
+
+- limits: `channels`, `linksPerChannel` (null = unlimited), `members`
+- features: `postbacks`, `revenue`, `fraudFull`
+
 ## Enforcement rules
 
 - Quotas are checked at creation time (channel connect, link create, member invite).

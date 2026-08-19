@@ -5,6 +5,7 @@ import {
   ChartLineUp,
   CurrencyCircleDollar,
   LinkSimple,
+  Lock,
   PaperPlaneTilt,
   SignOut,
   UsersThree,
@@ -12,24 +13,36 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { getMe, logout, type ApiChannel } from '@/lib/api';
+import { getMe, logout, type ApiChannel, type ApiWorkspace } from '@/lib/api';
+import { isFeatureLocked, normalizePlan, type GatedFeature } from '@/lib/billing';
 import { formatNumber } from '@/lib/format';
+import { PlanBadge } from '../shared/PlanBadge';
 import { Skeleton } from '../shared/States';
+import { billingHref } from '../shared/UpgradeCard';
+import { WorkspaceProvider } from './workspace-context';
 import styles from './shell.module.css';
 
-const NAV_ITEMS = [
+const NAV_ITEMS: {
+  segment: string;
+  label: string;
+  icon: typeof ChartLineUp;
+  exact: boolean;
+  /** Sections the plan can lock; the API is still the authority and answers 402. */
+  feature?: GatedFeature;
+}[] = [
   { segment: '', label: 'Overview', icon: ChartLineUp, exact: true },
   { segment: '/links', label: 'Links', icon: LinkSimple, exact: false },
-  { segment: '/postbacks', label: 'Postbacks', icon: PaperPlaneTilt, exact: false },
-  { segment: '/revenue', label: 'Revenue', icon: CurrencyCircleDollar, exact: false },
+  { segment: '/postbacks', label: 'Postbacks', icon: PaperPlaneTilt, exact: false, feature: 'postbacks' },
+  { segment: '/revenue', label: 'Revenue', icon: CurrencyCircleDollar, exact: false, feature: 'revenue' },
   { segment: '/subscribers', label: 'Subscribers', icon: UsersThree, exact: false },
-] as const;
+];
 
 /** Sidebar shell for /app/channels/[id]/*. Collapses to top tabs on mobile. */
 export function ChannelShell({ channelId, children }: { channelId: string; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [channel, setChannel] = useState<ApiChannel | null>(null);
+  const [workspace, setWorkspace] = useState<ApiWorkspace | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,10 +52,11 @@ export function ChannelShell({ channelId, children }: { channelId: string; child
         if (result.status === 401) router.replace('/app');
         return;
       }
-      const found = result.data.workspaces
-        .flatMap((workspace) => workspace.channels)
-        .find((item) => item.id === channelId);
-      setChannel(found ?? null);
+      const owner = result.data.workspaces.find((item) =>
+        item.channels.some((candidate) => candidate.id === channelId),
+      );
+      setWorkspace(owner ?? null);
+      setChannel(owner?.channels.find((candidate) => candidate.id === channelId) ?? null);
     });
     return () => {
       cancelled = true;
@@ -85,11 +99,34 @@ export function ChannelShell({ channelId, children }: { channelId: string; child
               )}
             </div>
           </div>
+
+          {workspace ? (
+            <div className={styles.planRow}>
+              <PlanBadge plan={normalizePlan(workspace.plan)} workspaceId={workspace.id} />
+            </div>
+          ) : null}
         </div>
 
         <nav className={styles.nav} aria-label="Channel navigation">
-          {NAV_ITEMS.map(({ segment, label, icon: Icon, exact }) => {
+          {NAV_ITEMS.map(({ segment, label, icon: Icon, exact, feature }) => {
             const href = `${base}${segment}`;
+            const isLocked = feature !== undefined && isFeatureLocked(workspace?.entitlements, feature);
+
+            if (isLocked) {
+              return (
+                <Link
+                  key={href}
+                  href={billingHref(workspace?.id)}
+                  className={`${styles.navItem} ${styles.navItemLocked}`}
+                  aria-label={`${label}, available on a paid plan`}
+                >
+                  <Icon size={17} />
+                  <span>{label}</span>
+                  <Lock size={13} weight="fill" className={styles.navLock} aria-hidden="true" />
+                </Link>
+              );
+            }
+
             const isActive = exact ? pathname === href : pathname.startsWith(href);
             return (
               <Link
@@ -111,7 +148,9 @@ export function ChannelShell({ channelId, children }: { channelId: string; child
         </button>
       </aside>
 
-      <div className={styles.content}>{children}</div>
+      <div className={styles.content}>
+        <WorkspaceProvider workspace={workspace}>{children}</WorkspaceProvider>
+      </div>
     </div>
   );
 }

@@ -1,12 +1,16 @@
 import { Bot } from 'grammy';
 import { getPrisma, BotStatus, EventType, Attribution } from '@tgpulse/db';
+import { getEntitlements } from './billing';
 import { config } from './config';
 import type { BotContext } from './context';
 import { getDict } from './i18n';
 import { withDict } from './i18n/middleware';
 import { getUserLang } from './i18n/user-lang';
+import { upsellMenu } from './menus';
 import { hasSubscribers, notifyMemberEvent } from './notifications';
 import { firePostbacks } from './postbacks';
+import { isChannelOverQuota } from './quota';
+import { channelOverQuotaCard } from './views/billing-view';
 import { channelConnectedCard } from './views/home-view';
 
 export const bot = new Bot<BotContext>(config.botToken);
@@ -70,7 +74,7 @@ bot.on('my_chat_member', async (ctx) => {
     });
   }
 
-  await prisma.channel.create({
+  const channel = await prisma.channel.create({
     data: {
       tgChatId: BigInt(chat.id),
       title: chat.title ?? 'Channel',
@@ -81,9 +85,20 @@ bot.on('my_chat_member', async (ctx) => {
     },
   });
 
+  // Over-quota channels are never refused: they keep tracking and get an upsell instead.
+  const entitlements = await getEntitlements(channel.workspaceId);
+  const isOverQuota = await isChannelOverQuota(channel, entitlements);
+
   const dict = getDict(await getUserLang(from.id, from.language_code));
+  const text = isOverQuota
+    ? channelOverQuotaCard(dict, channel.title, entitlements.plan)
+    : channelConnectedCard(dict, channel.title);
+
   await bot.api
-    .sendMessage(from.id, channelConnectedCard(dict, chat.title ?? 'Channel'), { parse_mode: 'HTML' })
+    .sendMessage(from.id, text, {
+      parse_mode: 'HTML',
+      ...(isOverQuota ? { reply_markup: upsellMenu(dict) } : {}),
+    })
     .catch(() => {
       // user may not have started the bot in DM, they'll see the channel in the dashboard
     });

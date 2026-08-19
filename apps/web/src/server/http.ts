@@ -2,11 +2,16 @@ import { NextResponse } from 'next/server';
 import type { ZodType } from 'zod';
 import { TelegramApiError } from './telegram';
 
+/** Extra fields merged into an error envelope, e.g. `{ upgrade: true }` on a 402 plan gate. */
+export type ErrorExtra = Readonly<Record<string, unknown>>;
+
 /** Error carrying an HTTP status; thrown by server helpers, mapped by handleRouteError. */
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    /** Merged into the response body alongside `ok` and `error`. */
+    public readonly extra?: ErrorExtra,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -17,8 +22,9 @@ export function jsonOk<T>(data: T, init?: ResponseInit): NextResponse {
   return NextResponse.json({ ok: true, data }, init);
 }
 
-export function jsonError(status: number, error: string): NextResponse {
-  return NextResponse.json({ ok: false, error }, { status });
+export function jsonError(status: number, error: string, extra?: ErrorExtra): NextResponse {
+  // Envelope fields are written last so `extra` can never clobber them.
+  return NextResponse.json({ ...extra, ok: false, error }, { status });
 }
 
 /** Validate unknown input against a zod schema; throws ApiError(400) with a readable message. */
@@ -48,7 +54,7 @@ export async function readJsonBody(req: Request): Promise<unknown> {
 /** Map thrown errors to the { ok: false, error } envelope without leaking stack traces. */
 export function handleRouteError(error: unknown): NextResponse {
   if (error instanceof ApiError) {
-    return jsonError(error.status, error.message);
+    return jsonError(error.status, error.message, error.extra);
   }
   if (error instanceof TelegramApiError) {
     console.error('[api] Telegram API error:', error.description);

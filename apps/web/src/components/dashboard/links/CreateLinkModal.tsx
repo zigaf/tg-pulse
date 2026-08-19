@@ -3,7 +3,7 @@
 import { CaretDown, X } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState, type FormEvent } from 'react';
-import { createLink, type CreateLinkInput, type TrackedLink } from '@/lib/api';
+import { createLink, isUpgradeRequired, type CreateLinkInput, type TrackedLink } from '@/lib/api';
 import ui from '../shared/ui.module.css';
 import styles from './links.module.css';
 
@@ -12,6 +12,8 @@ interface CreateLinkModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreated: (link: TrackedLink) => void;
+  /** Quota hit (HTTP 402): the parent shows an upgrade notice above the table. */
+  onUpgradeRequired: (message: string) => void;
 }
 
 const EMPTY_FORM: CreateLinkInput = { label: '', creative: '', utmSource: '', utmMedium: '', utmCampaign: '' };
@@ -26,7 +28,7 @@ function cleanInput(form: CreateLinkInput): CreateLinkInput {
 }
 
 /** Modal form: label (required), creative, collapsed UTM parameters. */
-export function CreateLinkModal({ channelId, isOpen, onClose, onCreated }: CreateLinkModalProps) {
+export function CreateLinkModal({ channelId, isOpen, onClose, onCreated, onUpgradeRequired }: CreateLinkModalProps) {
   const [form, setForm] = useState<CreateLinkInput>(EMPTY_FORM);
   const [isUtmOpen, setIsUtmOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -56,6 +58,11 @@ export function CreateLinkModal({ channelId, isOpen, onClose, onCreated }: Creat
     setIsPending(false);
     if (result.ok) {
       onCreated(result.data);
+      onClose();
+      return;
+    }
+    if (isUpgradeRequired(result)) {
+      onUpgradeRequired(result.error);
       onClose();
       return;
     }

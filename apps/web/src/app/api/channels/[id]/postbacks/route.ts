@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getPrisma } from '@tgpulse/db';
 import { assertChannelAccess } from '@/server/access';
 import { getSessionUserId } from '@/server/auth';
+import { assertFeature } from '@/server/entitlements';
 import { ApiError, handleRouteError, jsonError, jsonOk, parseOrThrow, readJsonBody } from '@/server/http';
 import { assertValidUrlTemplate, toPostbackDto } from '@/server/postbacks';
 
@@ -40,7 +41,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     if (!userId) return jsonError(401, 'Unauthorized');
 
     const { id: channelId } = await ctx.params;
-    await assertChannelAccess(userId, channelId);
+    const channel = await assertChannelAccess(userId, channelId);
+    // Listing stays open on FREE so a downgraded workspace still sees what it had.
+    await assertFeature(channel.workspaceId, 'postbacks');
 
     const body = parseOrThrow(createPostbackSchema, await readJsonBody(req));
     if (!body.onJoin && !body.onLeave) {

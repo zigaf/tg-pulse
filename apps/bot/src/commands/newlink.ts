@@ -5,9 +5,11 @@ import { config } from '../config';
 import type { BotContext } from '../context';
 import { CB, cancelMenu, channelPickerMenu, postCreateMenu } from '../menus';
 import { getUserActiveChannels, getUserChannel } from '../queries';
+import { checkLinkQuota } from '../quota';
 import { clearState, getState, setState } from '../state';
 import { askLabelCard, createdCard, pickChannelCard } from '../views/newlink-view';
 import { replyNoChannels } from './empty-states';
+import { editUpsell, replyUpsell } from './upsell';
 
 const prisma = getPrisma();
 
@@ -52,6 +54,14 @@ export function registerNewlink(bot: Bot<BotContext>): void {
       return;
     }
 
+    // Quotas are enforced before the dialog starts, so nobody types a label for nothing.
+    const gate = await checkLinkQuota(channel);
+    if (!gate.allowed) {
+      await ctx.answerCallbackQuery();
+      await editUpsell(ctx, gate.plan, { kind: gate.reason, limit: gate.limit });
+      return;
+    }
+
     setState(ctx.from.id, { step: 'awaiting_label', channelId: channel.id });
     await ctx.answerCallbackQuery();
     await ctx.editMessageText(askLabelCard(ctx.dict, channel.title), {
@@ -85,6 +95,14 @@ export function registerNewlink(bot: Bot<BotContext>): void {
     if (!channel || channel.botStatus !== BotStatus.ACTIVE) {
       clearState(ctx.from.id);
       await ctx.reply(ctx.dict.newlink.channelGone);
+      return;
+    }
+
+    // The dialog may have opened before a downgrade, so the quota is re-checked here.
+    const gate = await checkLinkQuota(channel);
+    if (!gate.allowed) {
+      clearState(ctx.from.id);
+      await replyUpsell(ctx, gate.plan, { kind: gate.reason, limit: gate.limit });
       return;
     }
 

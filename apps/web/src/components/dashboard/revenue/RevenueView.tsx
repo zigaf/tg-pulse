@@ -1,8 +1,10 @@
 'use client';
 
 import { ChartBar, PlugsConnected } from '@phosphor-icons/react';
-import { useState, type KeyboardEvent } from 'react';
+import { useCallback, useState, type KeyboardEvent } from 'react';
 import type { RevenueDays } from '@/lib/api';
+import { UpgradeCard } from '../shared/UpgradeCard';
+import { useFeatureLocked, useWorkspace } from '../shell/workspace-context';
 import { ConnectPanels } from './ConnectPanels';
 import { RevenueReport } from './RevenueReport';
 import styles from './revenue.module.css';
@@ -30,8 +32,14 @@ export function RevenueView({ channelId }: { channelId: string }) {
   const [tab, setTab] = useState<Tab>('report');
   const [days, setDays] = useState<RevenueDays>(7);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [isLockedByApi, setIsLockedByApi] = useState(false);
+
+  // Plan entitlements come from the shell, so a locked workspace never sees a report skeleton first.
+  const isLocked = useFeatureLocked('revenue') || isLockedByApi;
+  const workspace = useWorkspace();
 
   const handleImported = () => setRefreshToken((token) => token + 1);
+  const handleLocked = useCallback(() => setIsLockedByApi(true), []);
 
   const handleTabKeys = (event: KeyboardEvent<HTMLDivElement>) => {
     const target = nextTab(tab, event.key);
@@ -40,6 +48,23 @@ export function RevenueView({ channelId }: { channelId: string }) {
     setTab(target);
     document.getElementById(`revenue-tab-${target}`)?.focus();
   };
+
+  if (isLocked) {
+    return (
+      <section aria-labelledby="revenue-heading">
+        <header className={styles.pageHead}>
+          <h1 id="revenue-heading" className={styles.pageTitle}>
+            Revenue
+          </h1>
+        </header>
+        <UpgradeCard
+          title="Revenue and ROMI are part of Pro"
+          description="Connect your sales and every purchase gets tied back to the link that brought the buyer, so you see which ad earned money instead of which ad brought joins."
+          workspaceId={workspace?.id}
+        />
+      </section>
+    );
+  }
 
   return (
     <section aria-labelledby="revenue-heading">
@@ -80,6 +105,7 @@ export function RevenueView({ channelId }: { channelId: string }) {
             onDaysChange={setDays}
             refreshToken={refreshToken}
             onConnect={() => setTab('connect')}
+            onLocked={handleLocked}
           />
         </div>
       ) : (

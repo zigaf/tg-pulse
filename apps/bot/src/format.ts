@@ -15,6 +15,11 @@ export function percent(share: number): string {
   return `${Math.round(value)}%`;
 }
 
+/** Locale-independent calendar date: 2026-08-19. Used by reports, billing and receipts. */
+export function isoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
 /** Cut a label down so it still fits a Telegram inline button. */
 export function truncate(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max - 1)}…`;

@@ -20,6 +20,9 @@ export const CB = {
   ntfToggle: (channelId: string) => `ntf:${channelId}`,
   frChannel: (channelId: string) => `fr:ch:${channelId}`,
   frLink: (linkId: string) => `fr:link:${linkId}`,
+  goUpgrade: 'go:upgrade',
+  goBilling: 'go:billing',
+  billBuy: (plan: string, workspaceId: string) => `bill:buy:${plan}:${workspaceId}`,
 } as const;
 
 export const CHANNELS_PAGE_SIZE = 5;
@@ -170,6 +173,42 @@ export function fraudLinksMenu(dict: Dict, links: { linkId: string; title: strin
 
 export function backToFraudLinksMenu(dict: Dict, channelId: string): InlineKeyboard {
   return navRow(new InlineKeyboard(), dict, CB.frChannel(channelId));
+}
+
+export interface PlanOption {
+  plan: string;
+  label: string;
+}
+
+/** Plans screen: one button per purchasable plan, then back to the billing overview. */
+export function plansMenu(dict: Dict, options: PlanOption[], workspaceId: string): InlineKeyboard {
+  const keyboard = new InlineKeyboard();
+  for (const option of options) {
+    keyboard.text(option.label, CB.billBuy(option.plan, workspaceId)).row();
+  }
+  return navRow(keyboard, dict, CB.goBilling);
+}
+
+export function billingMenu(dict: Dict): InlineKeyboard {
+  return new InlineKeyboard()
+    .text(dict.buttons.upgrade, CB.goUpgrade)
+    .url(dict.buttons.openDashboard, config.dashboardUrl)
+    .row()
+    .text(dict.buttons.close, CB.close);
+}
+
+/** Invoice link: Telegram opens the Stars payment sheet from a plain URL button. */
+export function payMenu(dict: Dict, invoiceUrl: string): InlineKeyboard {
+  return new InlineKeyboard().url(dict.buttons.pay, invoiceUrl);
+}
+
+/** Shown instead of a bare error whenever a plan limit blocks an action. */
+export function upsellMenu(dict: Dict): InlineKeyboard {
+  return new InlineKeyboard().text(dict.buttons.upgrade, CB.goUpgrade).text(dict.buttons.close, CB.close);
+}
+
+export function paidMenu(dict: Dict): InlineKeyboard {
+  return new InlineKeyboard().url(dict.buttons.openDashboard, config.dashboardUrl);
 }
 
 export function notificationsMenu(

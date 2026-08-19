@@ -30,6 +30,28 @@ export async function getUserLink(tgUserId: number, linkId: string): Promise<Tra
   return channel ? link : null;
 }
 
+/**
+ * The workspace a bot dialog acts on. Users get one workspace when their first channel
+ * is connected; the oldest membership stays the default when there are several.
+ */
+export async function getUserWorkspaceId(tgUserId: number): Promise<string | null> {
+  const membership = await prisma.membership.findFirst({
+    where: { user: { tgId: BigInt(tgUserId) } },
+    orderBy: { createdAt: 'asc' },
+    select: { workspaceId: true },
+  });
+  return membership?.workspaceId ?? null;
+}
+
+/** Guard for anything addressed by workspace id from outside, e.g. a deep link. */
+export async function isWorkspaceMember(tgUserId: number, workspaceId: string): Promise<boolean> {
+  const membership = await prisma.membership.findFirst({
+    where: { workspaceId, user: { tgId: BigInt(tgUserId) } },
+    select: { workspaceId: true },
+  });
+  return membership !== null;
+}
+
 /** How far the user got through setup. Drives the /start checklist. */
 export async function getOnboardingProgress(
   tgUserId: number,

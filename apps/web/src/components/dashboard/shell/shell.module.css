@@ -87,6 +87,13 @@
   text-overflow: ellipsis;
 }
 
+/* Plan shortcut sits with the workspace identity, not with the nav. */
+.planRow {
+  display: flex;
+  padding: 0 0.4rem;
+  margin-top: -0.5rem;
+}
+
 /* ---------- nav ---------- */
 
 .nav {
@@ -138,6 +145,26 @@
 
 .navItemActive svg {
   color: var(--color-accent-bright);
+}
+
+/* ---------- locked nav item ---------- */
+
+.navItemLocked {
+  color: oklch(58% 0.015 290);
+}
+
+.navItemLocked:hover {
+  color: var(--color-text-muted);
+}
+
+.navItemLocked:hover .navLock {
+  color: var(--color-accent-bright);
+}
+
+.navLock {
+  margin-left: auto;
+  flex: none;
+  transition: color var(--duration-fast) ease;
 }
 
 /* ---------- sign out ---------- */
@@ -213,6 +240,11 @@
     display: none;
   }
 
+  .planRow {
+    padding: 0;
+    margin-top: 0;
+  }
+
   .nav {
     flex-direction: row;
     flex: 1;
@@ -227,6 +259,10 @@
   .navItem {
     padding: 0.45rem 0.65rem;
     white-space: nowrap;
+  }
+
+  .navLock {
+    margin-left: 0.1rem;
   }
 
   .navItemActive::before {

@@ -16,42 +16,43 @@ type Tier = {
   badge?: string;
 };
 
+// Keep in sync with docs/BILLING.md, the single source of truth for plans.
 const TIERS: readonly Tier[] = [
   {
     name: 'Free',
     price: '$0',
     period: 'forever',
-    features: ['1 channel', 'full attribution', 'daily bot report'],
+    features: ['1 channel', 'full attribution', 'landing pixel', 'daily bot report'],
     cta: { label: 'Start free', href: '/app' },
   },
   {
     name: 'Pro',
     price: '$19',
-    period: 'per channel, monthly',
-    badge: 'for launch',
+    period: 'monthly, 3 channels',
+    badge: 'most popular',
     featured: true,
     features: [
       'everything in Free',
-      'live dashboard',
-      'unsubscribe cohorts',
+      'unlimited tracking links',
       'conversion postbacks',
-      'exports',
-      'shareable reports',
+      'revenue and ROMI module',
+      'full fraud reports',
+      '5 team members',
     ],
     cta: { label: 'Try Pro', href: '/app' },
   },
   {
     name: 'Agency',
-    price: 'from $79',
-    period: 'monthly',
+    price: '$79',
+    period: 'monthly, 25 channels',
     features: [
       'everything in Pro',
-      'workspaces and roles',
+      '25 team members',
       'buyer comparison',
-      'white-label reports',
-      'ROMI module',
+      'client-ready reports',
+      'priority support',
     ],
-    cta: { label: 'Talk to us', href: 'https://t.me/tgpulse', external: true },
+    cta: { label: 'Get Agency', href: '/app' },
   },
 ];
 
@@ -114,7 +115,7 @@ export function PricingSection() {
         viewport={{ once: true, amount: 0.8 }}
         transition={{ duration: 0.7, delay: 0.3, ease: EASE }}
       >
-        One paused dead placement saves $50-150 of ad budget
+        One paused dead placement saves $50-150 of ad budget. Paid in Telegram Stars, inside the bot.
       </motion.p>
     </section>
   );

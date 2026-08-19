@@ -3,7 +3,7 @@
 import { ChartLineUp, CurrencyCircleDollar, Warning } from '@phosphor-icons/react';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState } from 'react';
-import { getRevenue, type ApiRevenueReport, type RevenueDays } from '@/lib/api';
+import { getRevenue, isUpgradeRequired, type ApiRevenueReport, type RevenueDays } from '@/lib/api';
 import { EmptyState, ErrorState, Skeleton, SkeletonRows } from '../shared/States';
 import ui from '../shared/ui.module.css';
 import { PeriodToggle } from './PeriodToggle';
@@ -42,6 +42,8 @@ interface RevenueReportProps {
   refreshToken: number;
   /** Sends the user to the data connection panels. */
   onConnect: () => void;
+  /** Called when the API answers 402: the parent swaps the whole section for an upgrade card. */
+  onLocked: () => void;
 }
 
 /** ROMI overview: totals, daily revenue chart, per-source attribution table. */
@@ -51,6 +53,7 @@ export function RevenueReport({
   onDaysChange,
   refreshToken,
   onConnect,
+  onLocked,
 }: RevenueReportProps) {
   const [report, setReport] = useState<ApiRevenueReport | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,13 +69,14 @@ export function RevenueReport({
     void getRevenue(channelId, days).then((result) => {
       if (isCancelled) return;
       if (result.ok) setReport(result.data);
+      else if (isUpgradeRequired(result)) onLocked();
       else setError(result.error);
       setIsLoading(false);
     });
     return () => {
       isCancelled = true;
     };
-  }, [channelId, days, refreshToken, retryToken]);
+  }, [channelId, days, refreshToken, retryToken, onLocked]);
 
   if (error && !report) {
     return (

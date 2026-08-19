@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { SaleKind } from '@tgpulse/db';
 import { bearerTokenFrom, verifyApiKey } from '@/server/api-keys';
+import { assertFeature } from '@/server/entitlements';
 import { ApiError, handleRouteError, jsonError, jsonOk, parseOrThrow } from '@/server/http';
 import { readJsonBodyWithLimit } from '@/server/request-body';
 import {
@@ -70,6 +71,10 @@ export async function POST(req: Request) {
     const channel = token ? await verifyApiKey(token) : null;
     // Deliberately uniform: never reveal whether the key is missing, malformed or revoked.
     if (!channel) return jsonError(401, 'Unauthorized');
+
+    // Keys are not issued on FREE, but a downgraded workspace may still hold an old one:
+    // authenticate first, then answer 402 so the caller knows why ingest stopped working.
+    await assertFeature(channel.workspaceId, 'revenue');
 
     const body = parseOrThrow(ingestSchema, await readJsonBodyWithLimit(req, MAX_BODY_BYTES));
     const inputs = body.events.map(toSaleEventInput);

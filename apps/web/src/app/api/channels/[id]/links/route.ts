@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import { getPrisma, EventType, PixelEventType } from '@tgpulse/db';
 import { assertChannelAccess } from '@/server/access';
 import { getSessionUserId } from '@/server/auth';
+import { assertQuota, countChannelLinks } from '@/server/entitlements';
 import { handleRouteError, jsonError, jsonOk, parseOrThrow, readJsonBody } from '@/server/http';
 import { toLinkDto } from '@/server/links';
 import { createChatInviteLink } from '@/server/telegram';
@@ -93,6 +94,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     const { id: channelId } = await ctx.params;
     const channel = await assertChannelAccess(userId, channelId);
     const body = parseOrThrow(createLinkSchema, await readJsonBody(req));
+
+    // Plan quota is checked before the Telegram call so a rejected create leaves no orphan invite.
+    await assertQuota(channel.workspaceId, 'linksPerChannel', await countChannelLinks(channel.id));
 
     // TelegramApiError propagates as 502 with the TG description.
     const inviteLink = await createChatInviteLink(channel.tgChatId, body.label);

@@ -4,7 +4,9 @@ import { ArrowUpRight, Broadcast, Pulse, SignOut, TelegramLogo } from '@phosphor
 import Link from 'next/link';
 import type { ApiChannel, MeData } from '@/lib/api';
 import { logout } from '@/lib/api';
+import { normalizePlan } from '@/lib/billing';
 import { BOT_USERNAME, formatNumber } from '@/lib/format';
+import { PlanBadge } from '../shared/PlanBadge';
 import { EmptyState } from '../shared/States';
 import ui from '../shared/ui.module.css';
 import styles from './channels.module.css';
@@ -63,6 +65,7 @@ function NoChannels() {
 /** Signed-in root: workspace channels as cards. */
 export function ChannelsHome({ me }: { me: MeData }) {
   const channels = me.workspaces.flatMap((workspace) => workspace.channels);
+  const primaryWorkspace = me.workspaces[0];
 
   const handleSignOut = async () => {
     await logout();
@@ -77,6 +80,9 @@ export function ChannelsHome({ me }: { me: MeData }) {
           TGPulse
         </span>
         <div className={styles.topbarRight}>
+          {primaryWorkspace ? (
+            <PlanBadge plan={normalizePlan(primaryWorkspace.plan)} workspaceId={primaryWorkspace.id} />
+          ) : null}
           <span className={styles.userName}>{me.user.firstName}</span>
           <button type="button" className={ui.btnGhost} onClick={() => void handleSignOut()}>
             <SignOut size={15} />

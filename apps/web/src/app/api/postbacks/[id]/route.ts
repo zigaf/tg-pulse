@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { getPrisma } from '@tgpulse/db';
 import { getSessionUserId } from '@/server/auth';
+import { assertChannelFeature } from '@/server/entitlements';
 import { ApiError, handleRouteError, jsonError, jsonOk, parseOrThrow, readJsonBody } from '@/server/http';
 import { assertPostbackAccess, assertValidUrlTemplate, toPostbackDto } from '@/server/postbacks';
 
@@ -22,6 +23,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     const { id } = await ctx.params;
     const postback = await assertPostbackAccess(userId, id);
+    await assertChannelFeature(postback.channelId, 'postbacks');
 
     const body = parseOrThrow(updatePostbackSchema, await readJsonBody(req));
     if (Object.keys(body).length === 0) {
@@ -61,6 +63,7 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
 
     const { id } = await ctx.params;
     const postback = await assertPostbackAccess(userId, id);
+    await assertChannelFeature(postback.channelId, 'postbacks');
 
     await getPrisma().postback.delete({ where: { id: postback.id } });
 

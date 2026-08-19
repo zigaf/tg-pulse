@@ -1,3 +1,4 @@
+import type { Plan } from '@tgpulse/db';
 import { percent } from '../format';
 import type { FraudReport, FraudSignal, FraudVerdict, SignalKey } from '../fraud';
 import type { Dict } from './index';
@@ -45,6 +46,13 @@ const evidence: Record<SignalKey, (s: FraudSignal, r: FraudReport) => string> = 
   conversion: (s) => `${percent(s.value)} кликов превратились в подписки, это заметно выше обычного посева`,
 };
 
+/** Названия тарифов продуктовые: одинаковые во всех локалях. */
+const planName: Record<Plan, string> = {
+  FREE: 'Free',
+  PRO: 'Pro',
+  AGENCY: 'Agency',
+};
+
 export const ru: Dict = {
   nav: {
     channels: 'Каналы',
@@ -53,6 +61,8 @@ export const ru: Dict = {
     fraud: 'Проверка на фрод',
     alerts: 'Уведомления',
     language: 'Язык',
+    billing: 'Оплата',
+    plans: 'Тарифы',
   },
 
   buttons: {
@@ -74,6 +84,9 @@ export const ru: Dict = {
     nextPage: 'След ›',
     english: 'English',
     russian: 'Русский',
+    upgrade: '⭐ Улучшить тариф',
+    billing: '💳 Оплата',
+    pay: '⭐ Оплатить звёздами',
   },
 
   commands: {
@@ -83,6 +96,8 @@ export const ru: Dict = {
     channels: 'Ваши каналы и ссылки',
     fraud: 'Проверить ссылку посева на ботов',
     notifications: 'Мгновенные уведомления о подписках',
+    upgrade: 'Тарифы и оплата звёздами Telegram',
+    billing: 'Ваш тариф, дата продления и платежи',
     language: 'Сменить язык бота',
     help: 'Как это работает и частые вопросы',
   },
@@ -121,6 +136,8 @@ export const ru: Dict = {
       '/channels список каналов, их ссылок и статистики',
       '/fraud оценивает ссылку на ботов: всплески, мгновенные отписки, пустые профили',
       '/notifications включает мгновенные уведомления о подписках и отписках',
+      '/upgrade показывает тарифы и оплату звёздами Telegram',
+      '/billing показывает тариф, дату продления и платежи',
       '/language переключает язык между английским и русским',
     ],
     faqTitle: 'Частые вопросы',
@@ -232,5 +249,62 @@ export const ru: Dict = {
   sources: {
     organic: 'органика',
     deletedLink: 'удалённая ссылка',
+  },
+
+  billing: {
+    planName,
+    unlimited: '∞',
+
+    plansTitle: 'Тарифы',
+    plansIntro: 'Тариф общий на рабочее пространство. Оплата проходит звёздами Telegram, прямо в этом чате.',
+    currentPlan: 'Текущий тариф',
+    usageChannels: 'Каналы',
+    usageLinks: 'Ссылок в канале',
+    usageMembers: 'Участники команды',
+    planOffer: (name: string, price: number) => `<b>${name}</b>, ${price} ⭐ / месяц`,
+    planPerks: (channels: number, links: string, members: number) =>
+      `${channels} ${plural(channels, 'канал', 'канала', 'каналов')}, ${links} ссылок в канале, ${members} ${plural(members, 'участник', 'участника', 'участников')} команды, постбеки, модуль выручки, полные отчёты по фроду`,
+    buyButton: (name: string, price: number) => `${name} ${price} ⭐ / месяц`,
+    plansFooter: (days: number) =>
+      `Период длится ${days} ${plural(days, 'день', 'дня', 'дней')} и продлевается автоматически. Отменить можно в любой момент в Telegram.`,
+
+    title: 'Оплата',
+    renewsOn: (date: string) => `Продление ${date}`,
+    activeUntil: (date: string) => `Действует до ${date}`,
+    cancelScheduled: 'Запланирована отмена, тариф не продлится.',
+    freeBody: 'У вас тариф Free. Списаний нет.',
+    paymentsTitle: 'Последние платежи',
+    paymentRow: (date: string, plan: string, amount: number) => `${date} · ${plan} · ${amount} ⭐`,
+    noPayments: 'Платежей пока не было.',
+    howToCancel: 'Как отменить: Telegram, затем «Настройки», «Мои звёзды», «Подписки».',
+
+    invoiceTitle: (name: string) => `TGPulse ${name}`,
+    invoiceDescription: (name: string, days: number) =>
+      `Тариф ${name} на ${days} ${plural(days, 'день', 'дня', 'дней')}: больше каналов, безлимит трекинг-ссылок, постбеки, модуль выручки и полные отчёты по фроду.`,
+    invoicePrompt: (name: string, price: number) =>
+      `${name}, ${price} ⭐ за период. Нажмите кнопку ниже, чтобы оплатить звёздами Telegram.`,
+    invoiceFailed: 'Не удалось открыть форму оплаты. Попробуйте ещё раз через минуту.',
+    invalidPayload: 'Этот счёт больше не действителен. Откройте /upgrade и выберите тариф заново.',
+
+    paidTitle: 'Платёж получен',
+    paidBody: (name: string, date: string) => `<b>${name}</b> действует до ${date}.`,
+    paidFooter: 'Всё, что открывает тариф, доступно сразу.',
+
+    noWorkspace: 'Тариф считается на рабочее пространство, а оно появляется вместе с первым каналом.',
+
+    upsell: {
+      title: 'Достигнут лимит тарифа',
+      channels: (plan: string, limit: number) =>
+        `Тариф ${plan} покрывает ${limit} ${plural(limit, 'канал', 'канала', 'каналов')}. Этот канал продолжает отслеживаться, но новые ссылки в нём заблокированы.`,
+      links: (plan: string, limit: number) =>
+        `Тариф ${plan} допускает ${limit} трекинг-${plural(limit, 'ссылку', 'ссылки', 'ссылок')} на канал, и этот канал уже заполнен.`,
+      fraud: (plan: string) =>
+        `На тарифе ${plan} полный отчёт по фроду доступен только для самой свежей ссылки канала.`,
+      footer: (name: string, price: number) =>
+        `Перейдите на ${name} за ${price} ⭐ в месяц, чтобы снять ограничение.`,
+      connectedTitle: 'Канал подключён сверх тарифа',
+      connectedBody: (title: string, plan: string, limit: number) =>
+        `«${title}» подключён и отслеживается. Тариф ${plan} покрывает ${limit} ${plural(limit, 'канал', 'канала', 'каналов')}, поэтому новые трекинг-ссылки в этом канале заблокированы до улучшения тарифа.`,
+    },
   },
 };

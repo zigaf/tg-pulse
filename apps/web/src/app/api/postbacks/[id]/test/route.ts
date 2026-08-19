@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { getSessionUserId } from '@/server/auth';
+import { assertChannelFeature } from '@/server/entitlements';
 import { handleRouteError, jsonError, jsonOk } from '@/server/http';
 import { assertPublicHttpUrl, safeFetch } from '@/server/net-guard';
 import { assertPostbackAccess, renderPostbackTemplate, TEST_MACRO_VALUES } from '@/server/postbacks';
@@ -16,6 +17,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
     const { id } = await ctx.params;
     const postback = await assertPostbackAccess(userId, id);
+    await assertChannelFeature(postback.channelId, 'postbacks');
 
     const url = renderPostbackTemplate(postback.urlTemplate, TEST_MACRO_VALUES);
 

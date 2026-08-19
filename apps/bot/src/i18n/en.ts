@@ -1,3 +1,4 @@
+import type { Plan } from '@tgpulse/db';
 import { percent } from '../format';
 import type { FraudReport, FraudSignal, FraudVerdict, SignalKey } from '../fraud';
 
@@ -37,6 +38,13 @@ const evidence: Record<SignalKey, (s: FraudSignal, r: FraudReport) => string> = 
   conversion: (s) => `${percent(s.value)} of clicks turned into joins, far above a normal seeding rate`,
 };
 
+/** Plan names are product names: identical in every locale. */
+const planName: Record<Plan, string> = {
+  FREE: 'Free',
+  PRO: 'Pro',
+  AGENCY: 'Agency',
+};
+
 export const en = {
   /** Breadcrumb segments. Kept separate from buttons: no emoji, title case. */
   nav: {
@@ -46,6 +54,8 @@ export const en = {
     fraud: 'Fraud check',
     alerts: 'Alerts',
     language: 'Language',
+    billing: 'Billing',
+    plans: 'Plans',
   },
 
   buttons: {
@@ -67,6 +77,9 @@ export const en = {
     nextPage: 'Next ›',
     english: 'English',
     russian: 'Русский',
+    upgrade: '⭐ Upgrade',
+    billing: '💳 Billing',
+    pay: '⭐ Pay with Stars',
   },
 
   commands: {
@@ -76,6 +89,8 @@ export const en = {
     channels: 'Your channels and links',
     fraud: 'Check a seeding link for bot traffic',
     notifications: 'Instant join and leave alerts',
+    upgrade: 'Plans and Telegram Stars payment',
+    billing: 'Your plan, renewal date and payments',
     language: 'Switch the bot language',
     help: 'How it works and FAQ',
   },
@@ -115,6 +130,8 @@ export const en = {
       '/channels lists channels, their links and stats',
       '/fraud scores a link for bot traffic: bursts, instant leaves, empty profiles',
       '/notifications toggles instant join and leave alerts',
+      '/upgrade shows the plans and pays with Telegram Stars',
+      '/billing shows your plan, renewal date and payments',
       '/language switches between English and Russian',
     ],
     faqTitle: 'FAQ',
@@ -226,5 +243,66 @@ export const en = {
   sources: {
     organic: 'organic',
     deletedLink: 'deleted link',
+  },
+
+  /**
+   * Prices, quotas and period lengths are always passed in from PLANS.
+   * Nothing here may state a number the billing module does not own.
+   */
+  billing: {
+    planName,
+    unlimited: '∞',
+
+    plansTitle: 'Plans',
+    plansIntro: 'Billing is per workspace. Payment goes through Telegram Stars, right here in the chat.',
+    currentPlan: 'Current plan',
+    usageChannels: 'Channels',
+    usageLinks: 'Links per channel',
+    usageMembers: 'Team members',
+    planOffer: (name: string, price: number) => `<b>${name}</b>, ${price} ⭐ / month`,
+    planPerks: (channels: number, links: string, members: number) =>
+      `${channels} channels, ${links} links per channel, ${members} team members, postbacks, revenue module, full fraud reports`,
+    buyButton: (name: string, price: number) => `${name} ${price} ⭐ / month`,
+    plansFooter: (days: number) =>
+      `Each period lasts ${days} days and renews automatically. Cancel any time in Telegram.`,
+
+    title: 'Billing',
+    renewsOn: (date: string) => `Renews on ${date}`,
+    activeUntil: (date: string) => `Active until ${date}`,
+    cancelScheduled: 'Cancellation is scheduled, so the plan will not renew.',
+    freeBody: 'You are on the Free plan. Nothing is charged.',
+    paymentsTitle: 'Last payments',
+    paymentRow: (date: string, plan: string, amount: number) => `${date} · ${plan} · ${amount} ⭐`,
+    noPayments: 'No payments yet.',
+    howToCancel: 'To cancel: Telegram, then Settings, My Stars, Subscriptions.',
+
+    invoiceTitle: (name: string) => `TGPulse ${name}`,
+    invoiceDescription: (name: string, days: number) =>
+      `${name} plan for ${days} days: more channels, unlimited tracking links, postbacks, revenue module and full fraud reports.`,
+    invoicePrompt: (name: string, price: number) =>
+      `${name}, ${price} ⭐ for one period. Tap the button below to pay with Telegram Stars.`,
+    invoiceFailed: 'Could not open the payment form. Please try again in a minute.',
+    invalidPayload: 'This invoice is not valid anymore. Open /upgrade and pick the plan again.',
+
+    paidTitle: 'Payment received',
+    paidBody: (name: string, date: string) => `<b>${name}</b> is active until ${date}.`,
+    paidFooter: 'Everything the plan unlocks is available right away.',
+
+    noWorkspace: 'Billing works per workspace, and a workspace appears with your first channel.',
+
+    upsell: {
+      title: 'Plan limit reached',
+      channels: (plan: string, limit: number) =>
+        `The ${plan} plan covers ${limit} ${limit === 1 ? 'channel' : 'channels'}. This one keeps tracking, but new links in it are blocked.`,
+      links: (plan: string, limit: number) =>
+        `The ${plan} plan allows ${limit} tracking ${limit === 1 ? 'link' : 'links'} per channel, and this channel is full.`,
+      fraud: (plan: string) =>
+        `On the ${plan} plan the full fraud report is available for the newest link of a channel only.`,
+      footer: (name: string, price: number) =>
+        `Upgrade to ${name} for ${price} ⭐ per month to lift the limit.`,
+      connectedTitle: 'Channel connected, above your plan',
+      connectedBody: (title: string, plan: string, limit: number) =>
+        `"${title}" is connected and tracking. Your ${plan} plan covers ${limit} ${limit === 1 ? 'channel' : 'channels'}, so new tracking links in this one are blocked until you upgrade.`,
+    },
   },
 };

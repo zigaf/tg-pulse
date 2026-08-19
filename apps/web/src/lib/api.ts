@@ -1,12 +1,13 @@
 /**
  * Typed fetch client for the TGPulse dashboard API.
  * Contract: docs/PHASE1-BUILD.md — every endpoint answers { ok: true, data } | { ok: false, error }.
- * The failure branch carries the HTTP status so the UI can distinguish 401 (show login).
+ * The failure branch carries the HTTP status so the UI can distinguish 401 (show login)
+ * and 402 (plan gate, see docs/BILLING.md).
  */
 
 export type ApiResult<T> =
   | { ok: true; data: T }
-  | { ok: false; error: string; status?: number };
+  | { ok: false; error: string; status?: number; upgrade?: boolean };
 
 export interface ApiUser {
   id: string;
@@ -24,10 +25,71 @@ export interface ApiChannel {
   subscriberCount: number;
 }
 
+/* ---------- billing (docs/BILLING.md) ---------- */
+
+export type Plan = 'FREE' | 'PRO' | 'AGENCY';
+
+/** Quota numbers. `null` means unlimited; the server may also send a negative value. */
+export interface PlanLimits {
+  channels: number | null;
+  linksPerChannel: number | null;
+  members: number | null;
+}
+
+/** Feature switches. Unknown keys are tolerated so a new server flag does not break the build. */
+export interface PlanFeatures {
+  postbacks: boolean;
+  revenue: boolean;
+  fraudFull: boolean;
+  [feature: string]: boolean | undefined;
+}
+
+/** What a workspace is allowed to do on its current plan. Served inline by GET /api/me. */
+export interface Entitlements {
+  limits: PlanLimits;
+  features: PlanFeatures;
+}
+
+export interface BillingUsage {
+  channels: number;
+  members: number;
+  /** Active tracked links per channel id; revoked links free their slot. */
+  linksByChannel: Record<string, number>;
+}
+
+export interface BillingSubscription {
+  /** ACTIVE | CANCELED | EXPIRED (Prisma SubscriptionStatus). CANCELED stays valid until the period end. */
+  status: string;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+}
+
+export interface PaymentRecord {
+  id: string;
+  plan: Plan;
+  /** Telegram Stars are integers; the currency field says which unit this is. */
+  amount: number;
+  /** "XTR" for Telegram Stars. */
+  currency: string;
+  createdAt: string;
+}
+
+export interface BillingData {
+  plan: Plan;
+  limits: PlanLimits;
+  features: PlanFeatures;
+  usage: BillingUsage;
+  /** null while the workspace has never paid (Free plan). */
+  subscription: BillingSubscription | null;
+  payments: PaymentRecord[];
+}
+
 export interface ApiWorkspace {
   id: string;
   name: string;
-  plan: string;
+  plan: Plan;
+  /** Absent on older server builds; treat "missing" as "no gate known yet". */
+  entitlements?: Entitlements;
   channels: ApiChannel[];
 }
 
@@ -220,9 +282,13 @@ export interface TelegramAuthPayload {
   hash: string;
 }
 
+/** Plan gate: the workspace is authenticated but its plan does not include the feature. */
+export const PAYMENT_REQUIRED = 402;
+
 const STATUS_MESSAGES: Record<number, string> = {
   400: 'The request was rejected. Check the form and try again.',
   401: 'You are not signed in.',
+  402: 'This is not included in your current plan.',
   403: 'You do not have access to this channel.',
   404: 'Not found.',
   500: 'Something went wrong on our side. Try again in a minute.',
@@ -232,6 +298,14 @@ function messageForStatus(status: number): string {
   return STATUS_MESSAGES[status] ?? `Request failed (HTTP ${status}).`;
 }
 
+/** True when the API refused because of the workspace plan, not because of an error. */
+export function isUpgradeRequired(result: ApiResult<unknown>): boolean {
+  return !result.ok && (result.upgrade === true || result.status === PAYMENT_REQUIRED);
+}
+
+/** Shape of the JSON envelope before it is narrowed into an ApiResult. */
+type ResponseBody<T> = { ok: true; data: T } | { ok: false; error?: string; upgrade?: boolean };
+
 async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {
   let response: Response;
   try {
@@ -240,13 +314,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T
     return { ok: false, error: 'Network error. Check your connection and retry.' };
   }
 
-  const body = (await response.json().catch(() => null)) as ApiResult<T> | null;
+  const body = (await response.json().catch(() => null)) as ResponseBody<T> | null;
+  const isGate = response.status === PAYMENT_REQUIRED;
 
   if (body && typeof body === 'object' && 'ok' in body) {
     if (body.ok) return { ok: true, data: body.data };
-    return { ok: false, error: body.error || messageForStatus(response.status), status: response.status };
+    return {
+      ok: false,
+      error: body.error || messageForStatus(response.status),
+      status: response.status,
+      upgrade: body.upgrade === true || isGate,
+    };
   }
-  return { ok: false, error: messageForStatus(response.status), status: response.status };
+  return { ok: false, error: messageForStatus(response.status), status: response.status, upgrade: isGate };
 }
 
 function send<T>(method: 'POST' | 'PATCH', path: string, payload?: unknown): Promise<ApiResult<T>> {
@@ -263,6 +343,11 @@ function post<T>(path: string, payload?: unknown): Promise<ApiResult<T>> {
 
 export function getMe(): Promise<ApiResult<MeData>> {
   return request<MeData>('/api/me');
+}
+
+/** Plan, quota usage and payment history for one workspace. */
+export function getBilling(workspaceId: string): Promise<ApiResult<BillingData>> {
+  return request<BillingData>(`/api/workspaces/${workspaceId}/billing`);
 }
 
 export function getOverview(channelId: string, days: 7 | 30): Promise<ApiResult<OverviewData>> {

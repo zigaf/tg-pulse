@@ -3,6 +3,7 @@ import { getPrisma } from '@tgpulse/db';
 import { assertChannelAccess } from '@/server/access';
 import { generateChannelApiKey, toApiKeyDto } from '@/server/api-keys';
 import { getSessionUserId } from '@/server/auth';
+import { assertFeature } from '@/server/entitlements';
 import { handleRouteError, jsonError, jsonOk } from '@/server/http';
 
 export const runtime = 'nodejs';
@@ -32,7 +33,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     if (!userId) return jsonError(401, 'Unauthorized');
 
     const { id: channelId } = await ctx.params;
-    await assertChannelAccess(userId, channelId);
+    const channel = await assertChannelAccess(userId, channelId);
+    // Listing (GET) stays open so a downgraded workspace can still revoke leftover keys.
+    await assertFeature(channel.workspaceId, 'revenue');
 
     const { raw, key } = await generateChannelApiKey(channelId);
 

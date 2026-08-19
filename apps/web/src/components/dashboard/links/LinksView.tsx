@@ -7,6 +7,8 @@ import { formatFullDate, formatNumber } from '@/lib/format';
 import { EmptyState, ErrorState, SkeletonRows } from '../shared/States';
 import table from '../shared/table.module.css';
 import ui from '../shared/ui.module.css';
+import { UpgradeNotice } from '../shared/UpgradeCard';
+import { useWorkspace } from '../shell/workspace-context';
 import { CopyButton } from './CopyButton';
 import { CreateLinkModal } from './CreateLinkModal';
 import { InstallPixelModal } from './InstallPixelModal';
@@ -92,7 +94,9 @@ export function LinksView({ channelId }: { channelId: string }) {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
+  const [upgradeMessage, setUpgradeMessage] = useState('');
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const workspace = useWorkspace();
 
   const load = useCallback(async () => {
     setError(null);
@@ -132,6 +136,7 @@ export function LinksView({ channelId }: { channelId: string }) {
   };
 
   const handleCreated = (link: TrackedLink) => {
+    setUpgradeMessage('');
     setLinks((previous) => (previous ? [link, ...previous] : [link]));
   };
 
@@ -146,6 +151,8 @@ export function LinksView({ channelId }: { channelId: string }) {
           Create link
         </button>
       </header>
+
+      {upgradeMessage ? <UpgradeNotice message={upgradeMessage} workspaceId={workspace?.id} /> : null}
 
       {actionError ? (
         <p className={styles.actionError} role="alert">
@@ -199,6 +206,7 @@ export function LinksView({ channelId }: { channelId: string }) {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreated={handleCreated}
+        onUpgradeRequired={setUpgradeMessage}
       />
       <InstallPixelModal link={pixelLink} onClose={() => setPixelLink(null)} />
     </section>

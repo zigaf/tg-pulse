@@ -1,0 +1,427 @@
+/* Billing: current plan, quota usage, plan comparison, payment history.
+   Same language as the rest of the dashboard: violet accent, mono numerals, hairline surfaces. */
+
+.page {
+  min-height: 100vh;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 1.4rem 1.5rem 4rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 2.2rem;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  border-radius: 8px;
+  padding: 0.25rem 0.35rem;
+  transition: color var(--duration-fast) ease;
+}
+
+.backLink:hover {
+  color: var(--color-text);
+}
+
+.backLink:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 2px;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.wordmark svg {
+  color: var(--color-accent-bright);
+}
+
+.headingRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.2rem;
+}
+
+.heading {
+  font-size: 1.6rem;
+}
+
+.headingHint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin: 2.2rem 0 0.8rem;
+}
+
+.sectionTitle {
+  font-size: 1.02rem;
+}
+
+.sectionHint {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+}
+
+/* ---------- current plan panel ---------- */
+
+.planPanel {
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem 1.6rem 0.5rem;
+}
+
+/* Accent wash anchors the panel as the page's primary surface. */
+.planPanel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(110% 130% at 100% 0%, oklch(62% 0.21 288 / 0.18), transparent 60%);
+  pointer-events: none;
+}
+
+.planTop {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.4rem;
+  flex-wrap: wrap;
+}
+
+.planIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.planEyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.planNameRow {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.planName {
+  font-size: 2rem;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.planMeta {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.planMetaStrong {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.planActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  max-width: 260px;
+}
+
+.planActionHint {
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+/* ---------- quota bars ---------- */
+
+.quotaList {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 2rem;
+  list-style: none;
+  margin-top: 1.5rem;
+  padding: 1.2rem 0 1.3rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.quotaRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.4rem 0.8rem;
+}
+
+.quotaLabel {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+}
+
+.quotaValue {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  color: var(--color-text);
+}
+
+.quotaValueFull {
+  color: var(--color-negative);
+}
+
+.quotaBar {
+  grid-column: 1 / -1;
+  height: 5px;
+  background: oklch(30% 0.02 290 / 0.6);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.quotaFill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-bright));
+  transform-origin: left center;
+  transition: transform var(--duration-normal) var(--ease-out-expo);
+}
+
+.quotaFillFull {
+  background: var(--color-negative);
+}
+
+.quotaNote {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  color: var(--color-negative);
+}
+
+.quotaUnlimited {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+/* ---------- plan cards ---------- */
+
+.planGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  align-items: stretch;
+}
+
+.planCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.15rem 1.2rem;
+  transition:
+    border-color var(--duration-fast) ease,
+    transform var(--duration-normal) var(--ease-out-expo);
+}
+
+.planCard:hover {
+  border-color: var(--color-border-strong);
+  transform: translateY(-2px);
+}
+
+.planCardCurrent {
+  border-color: var(--color-border-accent);
+  background: linear-gradient(180deg, oklch(62% 0.21 288 / 0.12), oklch(19% 0.02 290 / 0.55));
+}
+
+.planCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.planCardName {
+  font-size: 1.05rem;
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.priceValue {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.priceUnit {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.priceHint {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.tagline {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.7rem;
+}
+
+.featureList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  list-style: none;
+  flex: 1;
+  margin-bottom: 0.4rem;
+}
+
+.feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.featureIcon {
+  flex: none;
+  margin-top: 0.2rem;
+  color: var(--color-accent-bright);
+}
+
+.featureOff {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.featureOff .featureIcon {
+  color: var(--color-text-muted);
+}
+
+.planCardFoot {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.planCta {
+  composes: btn from '../shared/ui.module.css';
+  justify-content: center;
+  width: 100%;
+}
+
+.planCtaCurrent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  color: var(--color-accent-bright);
+  border: 1px dashed var(--color-border-accent);
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+}
+
+/* ---------- payments ---------- */
+
+.paymentDate {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.paymentPlan {
+  font-size: 0.78rem;
+  color: var(--color-text);
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 860px) {
+  .planGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .planTop {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .planActions {
+    align-items: stretch;
+    max-width: none;
+    width: 100%;
+  }
+
+  .planActionHint {
+    text-align: left;
+  }
+
+  .quotaList {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 1rem 1rem 3rem;
+  }
+
+  .planPanel {
+    padding: 1.2rem 1.1rem 0.4rem;
+  }
+
+  .planName {
+    font-size: 1.65rem;
+  }
+}
