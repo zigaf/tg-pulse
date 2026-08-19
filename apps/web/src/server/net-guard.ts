@@ -40,22 +40,46 @@ function isPrivateIp(ip: string): boolean {
 
 const MAX_REDIRECTS = 3;
 
+/** Upstream error text is shown to the user, so a hostile body cannot flood the UI. */
+const MAX_BODY_CHARS = 4000;
+
+export interface SafeFetchOptions {
+  method?: 'GET' | 'POST';
+  /** Dropped if a redirect leaves the origin the caller addressed. */
+  headers?: Readonly<Record<string, string>>;
+  body?: string;
+  /** Read the response body and return it truncated. Off by default so postback tests stay cheap. */
+  readBody?: boolean;
+}
+
+export interface SafeFetchResult {
+  status: number;
+  headers: { get(name: string): string | null };
+  /** Empty unless `readBody` was requested. */
+  body: string;
+}
+
 /**
- * Fetch a user-supplied URL with the guard re-applied on every redirect hop.
+ * Fetch an external URL with the guard re-applied on every redirect hop.
  * `redirect: 'follow'` would let a public host bounce us into the private network.
  */
 export async function safeFetch(
   rawUrl: string,
   timeoutMs: number,
-): Promise<{ status: number; headers: { get(name: string): string | null } }> {
+  options: SafeFetchOptions = {},
+): Promise<SafeFetchResult> {
+  const method = options.method ?? 'GET';
   let url = rawUrl;
+  let headers = options.headers;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
     const validatedIp = await resolvePublicAddress(url);
     const agent = pinnedAgent(validatedIp);
     try {
       const res = await undiciFetch(url, {
-        method: 'GET',
+        method,
+        headers: headers as Record<string, string> | undefined,
+        body: method === 'GET' ? undefined : options.body,
         redirect: 'manual',
         signal: AbortSignal.timeout(timeoutMs),
         // Pin the connection to the address the guard just approved: plain DNS
@@ -63,11 +87,21 @@ export async function safeFetch(
         dispatcher: agent,
       });
 
-      if (res.status < 300 || res.status >= 400) return res;
+      if (res.status < 300 || res.status >= 400) {
+        // Read inside the try: closing the agent tears down the connection the body streams over.
+        const body = options.readBody ? (await res.text()).slice(0, MAX_BODY_CHARS) : '';
+        return { status: res.status, headers: res.headers, body };
+      }
 
       const location = res.headers.get('location');
-      if (!location) return res;
-      url = new URL(location, url).toString();
+      if (!location) {
+        return { status: res.status, headers: res.headers, body: '' };
+      }
+
+      const next = new URL(location, url);
+      // Never hand an Authorization header to a host the caller did not address.
+      if (next.origin !== new URL(url).origin) headers = undefined;
+      url = next.toString();
     } finally {
       void agent.close();
     }

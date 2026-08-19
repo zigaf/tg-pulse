@@ -37,7 +37,7 @@ const NODES = [
     y: 560,
     step: 'Result',
     title: 'Budget flows to what works',
-    points: ['CPS drops 1.5-2x', 'Conversions post back to ad platforms'],
+    points: ['CPS drops 1.5-2x', 'Subscribes upload to Meta and Yandex'],
     side: 'left',
   },
 ] as const;

@@ -1,0 +1,228 @@
+import type { AdIntegration } from '@tgpulse/db';
+import { providerLabel, type AdProvider } from '@/lib/ad-providers';
+import { safeFetch } from './net-guard';
+import {
+  decryptCredentials,
+  parseMetaConfig,
+  parseYandexConfig,
+  type MetaConfig,
+  type StringMap,
+  type YandexConfig,
+} from './integrations';
+
+/**
+ * Real verification calls against the ad platforms (docs/AD-INTEGRATIONS.md, "Test").
+ *
+ * Every request goes through `safeFetch`, so the SSRF guard is re-applied on each redirect hop
+ * and the Authorization header is dropped if a redirect leaves the platform's own origin.
+ * Whatever the platform says is passed back verbatim: its wording is more useful than ours.
+ */
+
+const TEST_TIMEOUT_MS = 10_000;
+
+const META_GRAPH_VERSION = 'v21.0';
+const META_GRAPH_ORIGIN = 'https://graph.facebook.com';
+const YANDEX_METRIKA_ORIGIN = 'https://api-metrika.yandex.net';
+
+export interface IntegrationTestResult {
+  ok: boolean;
+  detail: string;
+}
+
+function parseJson(text: string): Record<string, unknown> {
+  try {
+    const value: unknown = JSON.parse(text);
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function asText(value: unknown): string {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : '';
+}
+
+/** Network failures read the same to the user whichever platform timed out. */
+function transportDetail(error: unknown): string {
+  const isTimeout =
+    error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
+  return isTimeout
+    ? `No response within ${TEST_TIMEOUT_MS / 1000}s.`
+    : 'Could not reach the platform (DNS, TLS or connection refused).';
+}
+
+// ---------- Meta ----------
+
+/** Graph API errors always arrive as `{ error: { message, type, code } }`. */
+function metaError(body: string, status: number): string {
+  const error = asRecord(parseJson(body).error);
+  const message = asText(error.message);
+  const type = asText(error.type);
+  if (!message) return `Meta answered HTTP ${status}.`;
+  return type ? `${type}: ${message}` : message;
+}
+
+async function testMeta(credentials: StringMap, config: MetaConfig): Promise<IntegrationTestResult> {
+  const authorization = { Authorization: `Bearer ${credentials.accessToken}` };
+
+  // Reading the dataset proves the token exists, is valid and can see this pixel.
+  const probe = await safeFetch(
+    `${META_GRAPH_ORIGIN}/${META_GRAPH_VERSION}/${config.pixelId}?fields=name`,
+    TEST_TIMEOUT_MS,
+    { headers: authorization, readBody: true },
+  );
+  if (probe.status !== 200) {
+    return { ok: false, detail: metaError(probe.body, probe.status) };
+  }
+
+  const pixelName = asText(parseJson(probe.body).name) || config.pixelId;
+  if (!config.testEventCode) {
+    return {
+      ok: true,
+      detail: `Token is valid and can see pixel "${pixelName}". Add a test event code to send a real event.`,
+    };
+  }
+
+  // With a test event code the check goes all the way: a real event lands in Test Events.
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const payload = JSON.stringify({
+    data: [
+      {
+        event_name: config.eventName,
+        event_time: nowSeconds,
+        action_source: 'system_generated',
+        event_id: `tgpulse-test-${nowSeconds}`,
+        user_data: { fbc: `fb.1.${nowSeconds * 1000}.tgpulse_test` },
+      },
+    ],
+    test_event_code: config.testEventCode,
+  });
+
+  const send = await safeFetch(
+    `${META_GRAPH_ORIGIN}/${META_GRAPH_VERSION}/${config.pixelId}/events`,
+    TEST_TIMEOUT_MS,
+    {
+      method: 'POST',
+      headers: { ...authorization, 'Content-Type': 'application/json' },
+      body: payload,
+      readBody: true,
+    },
+  );
+  if (send.status !== 200) {
+    return { ok: false, detail: metaError(send.body, send.status) };
+  }
+
+  const received = Number(parseJson(send.body).events_received ?? 0);
+  return {
+    ok: true,
+    detail: `Pixel "${pixelName}" accepted the test event (${received} received). Check Test Events with code ${config.testEventCode}.`,
+  };
+}
+
+// ---------- Yandex ----------
+
+/** Metrica returns `{ errors: [{ message }], message }`; either field may carry the useful text. */
+function yandexError(body: string, status: number): string {
+  const parsed = parseJson(body);
+  const errors = Array.isArray(parsed.errors) ? parsed.errors : [];
+  const first = asText(asRecord(errors[0]).message);
+  return first || asText(parsed.message) || `Metrica answered HTTP ${status}.`;
+}
+
+async function testYandex(
+  credentials: StringMap,
+  config: YandexConfig,
+): Promise<IntegrationTestResult> {
+  const authorization = { Authorization: `OAuth ${credentials.oauthToken}` };
+
+  const probe = await safeFetch(
+    `${YANDEX_METRIKA_ORIGIN}/management/v1/counter/${config.counterId}`,
+    TEST_TIMEOUT_MS,
+    { headers: authorization, readBody: true },
+  );
+  if (probe.status !== 200) {
+    return { ok: false, detail: yandexError(probe.body, probe.status) };
+  }
+
+  const counter = asRecord(parseJson(probe.body).counter);
+  const counterName = asText(counter.name) || `counter ${config.counterId}`;
+
+  // The goal name must match Metrica character for character, so verify it rather than trust it.
+  const goals = await safeFetch(
+    `${YANDEX_METRIKA_ORIGIN}/management/v1/counter/${config.counterId}/goals`,
+    TEST_TIMEOUT_MS,
+    { headers: authorization, readBody: true },
+  );
+  if (goals.status !== 200) {
+    return {
+      ok: true,
+      detail: `Token is valid for "${counterName}". The goal list could not be read, so the goal name was not verified.`,
+    };
+  }
+
+  const parsedGoals = parseJson(goals.body).goals;
+  const names = (Array.isArray(parsedGoals) ? parsedGoals : [])
+    .map((goal) => asText(asRecord(goal).name))
+    .filter((name) => name.length > 0);
+
+  if (!names.includes(config.goalName)) {
+    const known = names.slice(0, 5).join(', ');
+    return {
+      ok: false,
+      detail: known
+        ? `Token is valid for "${counterName}", but no goal is named "${config.goalName}". Goals on this counter: ${known}.`
+        : `Token is valid for "${counterName}", but the counter has no goals yet. Create one and paste its exact name.`,
+    };
+  }
+
+  return {
+    ok: true,
+    detail: `Connected to "${counterName}" and matched the goal "${config.goalName}". Make sure offline conversions are enabled under Data upload.`,
+  };
+}
+
+// ---------- entry point ----------
+
+/**
+ * Perform the platform's own verification call for one integration.
+ * Credential and transport problems come back as `{ ok: false, detail }` rather than throwing,
+ * so the route can answer 200 with the platform's message on screen.
+ */
+export async function runIntegrationTest(
+  integration: AdIntegration,
+): Promise<IntegrationTestResult> {
+  const provider = integration.provider as AdProvider;
+  const credentials = decryptCredentials(integration);
+
+  // Config is parsed before the try so a malformed stored config surfaces as a 400,
+  // not as a bogus "could not reach the platform".
+  const run = ((): (() => Promise<IntegrationTestResult>) | null => {
+    if (provider === 'META_CAPI') {
+      const config = parseMetaConfig(integration.config);
+      return () => testMeta(credentials, config);
+    }
+    if (provider === 'YANDEX_METRIKA') {
+      const config = parseYandexConfig(integration.config);
+      return () => testYandex(credentials, config);
+    }
+    return null;
+  })();
+
+  if (!run) {
+    return { ok: false, detail: `${providerLabel(provider)} cannot be tested yet.` };
+  }
+
+  try {
+    return await run();
+  } catch (error) {
+    return { ok: false, detail: transportDetail(error) };
+  }
+}

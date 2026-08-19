@@ -5,6 +5,8 @@
  * and 402 (plan gate, see docs/BILLING.md).
  */
 
+import type { AdProvider } from './ad-providers';
+
 export type ApiResult<T> =
   | { ok: true; data: T }
   | {
@@ -199,6 +201,72 @@ export interface UpdatePostbackInput {
   onJoin?: boolean;
   onLeave?: boolean;
   isActive?: boolean;
+}
+
+/* ---------- ad platform integrations (docs/AD-INTEGRATIONS.md) ---------- */
+
+/** One native ad-platform connection. Credentials are write-only: only a masked hint comes back. */
+export interface ApiIntegration {
+  id: string;
+  channelId: string;
+  provider: AdProvider;
+  isActive: boolean;
+  sendJoins: boolean;
+  /** Non-secret settings: pixel id, counter id, goal name. */
+  config: Record<string, string>;
+  /** Masked tail of the stored secret, e.g. "•••• 4f2a". null when it cannot be read. */
+  credentialHint: string | null;
+  /** The stored secret no longer decrypts (key rotation), so the user must reconnect. */
+  needsReconnect: boolean;
+  lastSyncAt: string | null;
+  lastStatus: string | null;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SaveIntegrationInput {
+  provider: AdProvider;
+  /** Omit on an update to keep the stored secret. */
+  credentials?: Record<string, string>;
+  config: Record<string, string>;
+  isActive?: boolean;
+  sendJoins?: boolean;
+}
+
+export interface UpdateIntegrationInput {
+  isActive?: boolean;
+  sendJoins?: boolean;
+  credentials?: Record<string, string>;
+  config?: Record<string, string>;
+}
+
+/** Outbox counters over the health window. */
+export interface IntegrationUploadCounters {
+  pending: number;
+  sent: number;
+  failed: number;
+}
+
+export interface IntegrationHealthRow {
+  integrationId: string;
+  provider: AdProvider;
+  isActive: boolean;
+  lastSyncAt: string | null;
+  lastStatus: string | null;
+  lastError: string | null;
+  uploads: IntegrationUploadCounters;
+}
+
+export interface IntegrationsHealth {
+  windowDays: number;
+  items: IntegrationHealthRow[];
+}
+
+/** Outcome of a real call to the platform. `ok: false` carries the platform's own wording. */
+export interface IntegrationTestOutcome {
+  ok: boolean;
+  detail: string;
 }
 
 export interface SubscriberRow {
@@ -412,6 +480,45 @@ export function deletePostback(id: string): Promise<ApiResult<{ id: string }>> {
 /** Fires the postback once with test macro values; resolves the upstream HTTP status. */
 export function testPostback(id: string): Promise<ApiResult<{ status: number }>> {
   return post<{ status: number }>(`/api/postbacks/${id}/test`);
+}
+
+/* ---------- ad platform integrations ---------- */
+
+export function getIntegrations(channelId: string): Promise<ApiResult<ApiIntegration[]>> {
+  return request<ApiIntegration[]>(`/api/channels/${channelId}/integrations`);
+}
+
+/** Connect or reconnect one platform. One row per (channel, provider), so this is an upsert. */
+export function saveIntegration(
+  channelId: string,
+  input: SaveIntegrationInput,
+): Promise<ApiResult<ApiIntegration>> {
+  return post<ApiIntegration>(`/api/channels/${channelId}/integrations`, input);
+}
+
+/** Toggle active state, rotate credentials or replace the non-secret config. */
+export function updateIntegration(
+  id: string,
+  input: UpdateIntegrationInput,
+): Promise<ApiResult<ApiIntegration>> {
+  return send<ApiIntegration>('PATCH', `/api/integrations/${id}`, input);
+}
+
+export function deleteIntegration(id: string): Promise<ApiResult<{ id: string }>> {
+  return del<{ id: string }>(`/api/integrations/${id}`);
+}
+
+/**
+ * Performs a real call to the platform. The request succeeds even when the platform refuses;
+ * read `data.ok` for the verdict and `data.detail` for its message.
+ */
+export function testIntegration(id: string): Promise<ApiResult<IntegrationTestOutcome>> {
+  return post<IntegrationTestOutcome>(`/api/integrations/${id}/test`);
+}
+
+/** Delivery counters and the last recorded outcome for every integration of the channel. */
+export function getIntegrationsHealth(channelId: string): Promise<ApiResult<IntegrationsHealth>> {
+  return request<IntegrationsHealth>(`/api/channels/${channelId}/integrations/health`);
 }
 
 export function getSubscribers(

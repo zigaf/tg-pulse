@@ -22,8 +22,8 @@ const FEATURES = [
     text: 'Realtime growth, unsubscribe and conversion charts. Share a report with a client in one link.',
   },
   {
-    title: 'Conversion postbacks',
-    text: 'Send the subscribe event back to Telegram Ads, Meta or Google. Pay for subscribers, not clicks.',
+    title: 'Conversions back to your ad account',
+    text: 'Every subscribe is uploaded to Meta and Yandex against the original click id, so the algorithm optimizes for subscribers instead of clicks.',
   },
   {
     title: 'ROMI per source',

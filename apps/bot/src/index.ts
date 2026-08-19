@@ -18,6 +18,8 @@ import { registerStart } from './commands/start';
 import { registerStats } from './commands/stats';
 import { registerUpgrade } from './commands/upgrade';
 import { config } from './config';
+import { startConversionCrons } from './conversions';
+import { isEncryptionConfigured } from './crypto';
 import { registerFallback } from './fallback';
 import { getDict, type Dict, type Lang } from './i18n';
 import { registerPixel } from './pixel';
@@ -166,6 +168,12 @@ async function main() {
   startReportCron();
   startMemberCountSync(bot);
   startBillingCron();
+  startConversionCrons();
+
+  // Integrations are unusable without the credential key; fail visibly, not silently.
+  if (!isEncryptionConfigured()) {
+    app.log.warn('ENCRYPTION_KEY is not set: ad-platform integrations are disabled');
+  }
 
   // Telegram keeps one command list per language_code, so both locales are published.
   await bot.api.setMyCommands(commandList(getDict('en')));

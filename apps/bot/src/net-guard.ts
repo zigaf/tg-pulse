@@ -40,6 +40,21 @@ function isPrivateIp(ip: string): boolean {
 
 const MAX_REDIRECTS = 3;
 
+export interface SafeFetchInit {
+  method?: 'GET' | 'POST';
+  headers?: Record<string, string>;
+  body?: string | Uint8Array;
+  /** Read the response body — needed to surface what an ad platform replied. */
+  readBody?: boolean;
+}
+
+export interface SafeFetchResponse {
+  status: number;
+  headers: { get(name: string): string | null };
+  /** Empty unless `readBody` was requested. */
+  body: string;
+}
+
 /**
  * Fetch a user-supplied URL with the guard re-applied on every redirect hop.
  * `redirect: 'follow'` would let a public host bounce us into the private network.
@@ -47,7 +62,8 @@ const MAX_REDIRECTS = 3;
 export async function safeFetch(
   rawUrl: string,
   timeoutMs: number,
-): Promise<{ status: number; headers: { get(name: string): string | null } }> {
+  init: SafeFetchInit = {},
+): Promise<SafeFetchResponse> {
   let url = rawUrl;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
@@ -55,7 +71,9 @@ export async function safeFetch(
     const agent = pinnedAgent(validatedIp);
     try {
       const res = await undiciFetch(url, {
-        method: 'GET',
+        method: init.method ?? 'GET',
+        headers: init.headers,
+        body: init.body,
         redirect: 'manual',
         signal: AbortSignal.timeout(timeoutMs),
         // Pin the connection to the address the guard just approved: plain DNS
@@ -63,10 +81,14 @@ export async function safeFetch(
         dispatcher: agent,
       });
 
-      if (res.status < 300 || res.status >= 400) return res;
+      if (res.status < 300 || res.status >= 400) {
+        // Read before the agent closes, otherwise the body stream may be gone.
+        const body = init.readBody ? await res.text() : '';
+        return { status: res.status, headers: res.headers, body };
+      }
 
       const location = res.headers.get('location');
-      if (!location) return res;
+      if (!location) return { status: res.status, headers: res.headers, body: '' };
       url = new URL(location, url).toString();
     } finally {
       void agent.close();

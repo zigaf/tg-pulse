@@ -2,6 +2,7 @@ import { Bot } from 'grammy';
 import { getPrisma, BotStatus, EventType, Attribution } from '@tgpulse/db';
 import { getEntitlements } from './billing';
 import { config } from './config';
+import { enqueueJoinConversions } from './conversions';
 import type { BotContext } from './context';
 import { getDict } from './i18n';
 import { withDict } from './i18n/middleware';
@@ -132,30 +133,28 @@ bot.on('chat_member', async (ctx) => {
       where: { channelId_tgUserId: { channelId: channel.id, tgUserId } },
     });
 
-    if (existing) {
-      await prisma.subscriber.update({
-        where: { id: existing.id },
-        data: {
-          leftAt: null,
-          rejoinCount: { increment: 1 },
-          // keep original attribution unless we now have a better (exact) one
-          ...(link ? { linkId: link.id, attribution: Attribution.EXACT } : {}),
-        },
-      });
-    } else {
-      await prisma.subscriber.create({
-        data: {
-          channelId: channel.id,
-          tgUserId,
-          username: member.username,
-          firstName: member.first_name,
-          isPremium: member.is_premium ?? false,
-          joinedAt: now,
-          linkId: link?.id,
-          attribution: link ? Attribution.EXACT : inviteUrl ? Attribution.ORGANIC : Attribution.UNKNOWN,
-        },
-      });
-    }
+    const subscriber = existing
+      ? await prisma.subscriber.update({
+          where: { id: existing.id },
+          data: {
+            leftAt: null,
+            rejoinCount: { increment: 1 },
+            // keep original attribution unless we now have a better (exact) one
+            ...(link ? { linkId: link.id, attribution: Attribution.EXACT } : {}),
+          },
+        })
+      : await prisma.subscriber.create({
+          data: {
+            channelId: channel.id,
+            tgUserId,
+            username: member.username,
+            firstName: member.first_name,
+            isPremium: member.is_premium ?? false,
+            joinedAt: now,
+            linkId: link?.id,
+            attribution: link ? Attribution.EXACT : inviteUrl ? Attribution.ORGANIC : Attribution.UNKNOWN,
+          },
+        });
 
     await prisma.memberEvent.create({
       data: { channelId: channel.id, tgUserId, type: EventType.JOIN, linkId: link?.id, ts: now },
@@ -163,6 +162,11 @@ bot.on('chat_member', async (ctx) => {
 
     // Server-to-server conversion postbacks; never blocks attribution handling
     void firePostbacks(channel, 'join', link, tgUserId);
+
+    // Native ad-platform conversions go through the outbox; delivery is a worker's job
+    void enqueueJoinConversions(channel.id, subscriber.id, link).catch((e: unknown) =>
+      console.error('[conversions] enqueue dispatch failed', e),
+    );
 
     // Instant alerts for opted-in users; never blocks attribution handling
     void notifyMemberEvent(bot.api, channel, EventType.JOIN, link?.label ?? null);

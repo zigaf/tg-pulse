@@ -6,6 +6,7 @@ import {
   CurrencyCircleDollar,
   LinkSimple,
   Lock,
+  Megaphone,
   PaperPlaneTilt,
   SignOut,
   UsersFour,
@@ -42,6 +43,8 @@ const NAV_ITEMS: {
   { segment: '', label: 'Overview', icon: ChartLineUp, exact: true },
   { segment: '/links', label: 'Links', icon: LinkSimple, exact: false },
   { segment: '/postbacks', label: 'Postbacks', icon: PaperPlaneTilt, exact: false, feature: 'postbacks' },
+  // Native ad-platform connections; same gate as postbacks (docs/AD-INTEGRATIONS.md).
+  { segment: '/integrations', label: 'Ad platforms', icon: Megaphone, exact: false, feature: 'postbacks' },
   { segment: '/revenue', label: 'Revenue', icon: CurrencyCircleDollar, exact: false, feature: 'revenue' },
   { segment: '/subscribers', label: 'Subscribers', icon: UsersThree, exact: false },
 ];
