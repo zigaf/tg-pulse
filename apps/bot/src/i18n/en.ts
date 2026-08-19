@@ -66,6 +66,9 @@ export const en = {
     createAnother: 'Create another',
     viewStats: 'View stats',
     cancel: 'Cancel',
+    skip: 'Skip',
+    modeInvite: 'Invite link (default)',
+    modeLandingPost: 'Landing post',
     stats: 'Stats',
     newLink: 'New link',
     links: 'Links',
@@ -85,6 +88,7 @@ export const en = {
   commands: {
     start: 'What TGPulse does and quick actions',
     newlink: 'Create a tracking link',
+    bulklinks: 'Create many tracking links at once',
     stats: 'Joins, leaves and sources, last 7 days',
     channels: 'Your channels and links',
     fraud: 'Check a seeding link for bot traffic',
@@ -126,6 +130,7 @@ export const en = {
     commandsTitle: 'Commands',
     commands: [
       '/newlink creates a tracking link',
+      '/bulklinks creates one link per line for a whole media plan, plus a CSV for your ad manager',
       '/stats shows the last 7 days per channel',
       '/channels lists channels, their links and stats',
       '/fraud scores a link for bot traffic: bursts, instant leaves, empty profiles',
@@ -162,6 +167,25 @@ export const en = {
     emptyLabel: 'The label cannot be empty. Send a short name for this link.',
     channelGone: 'That channel is no longer available. Start over with /newlink.',
     cancelled: 'Cancelled. Nothing was created.',
+    expired: 'This dialog expired. Start again with /newlink.',
+
+    askMode: 'Where should this link send people?',
+    modeFooter:
+      'Invite link attributes every join exactly. Landing post sends people to a post in the channel first.',
+    askPostUrl:
+      'Send the post URL, for example https://t.me/yourchannel/123 or https://t.me/c/1234567890/123.',
+    postUrlFooter: 'The post has to belong to this channel, otherwise the link is refused.',
+    postUrlNotTelegram:
+      'That is not a t.me address. Send a post URL like https://t.me/yourchannel/123.',
+    postUrlNotAPost:
+      'That link does not point at a post. A post URL ends with the message number, for example https://t.me/yourchannel/123.',
+    postUrlOtherChannel: (title: string) =>
+      `That post belongs to another chat. Send a post from "${title}", otherwise the tracking link would send people somewhere else.`,
+    postUrlNoUsername: (title: string) =>
+      `"${title}" has no public username, so there is nothing to check a t.me/<name>/<id> URL against. Use the private form https://t.me/c/<id>/<message>.`,
+
+    askBuyer: 'Who is the media buyer for this placement?',
+    buyerFooter: 'Optional. Tap Skip if you do not compare buyers.',
     createFailed: (description: string, title: string) =>
       `Failed to create the invite link: ${description}. Check that the bot is still an admin in "${title}".`,
     saveFailed: 'Failed to save the link. Please try /newlink again.',
@@ -171,6 +195,39 @@ export const en = {
     inviteLink: 'Invite link',
     createdFooter: (sources: number) =>
       `This channel now has ${sources} tracking ${sources === 1 ? 'source' : 'sources'}. Share the tracking URL: every click and join through it is attributed to this label.`,
+  },
+
+  /** Wording shared by every screen that shows a link: mode, buyer, the honest caveat. */
+  links: {
+    mode: 'Mode',
+    modeInvite: 'Invite link',
+    modeLandingPost: 'Landing post',
+    landingPost: 'Landing post URL',
+    buyer: 'Buyer',
+    landingPostWarning:
+      'Attribution for landing-post links is time-window based, less precise than invite links.',
+    landingPostLegend: (mark: string) =>
+      `${mark} marks landing-post links: attribution there is time-window based, less precise than invite links.`,
+  },
+
+  bulk: {
+    title: 'Bulk links',
+    pickChannel: 'Pick the channel these links point to.',
+    ask: (max: number) =>
+      `Send up to ${max} placement names, one per line. Each line becomes its own tracking link.`,
+    askFooter: 'The line is used as the label, exactly as you send it.',
+    empty: 'No names found. Send at least one placement name, one per line.',
+    working: (count: number) => `Creating ${count} ${count === 1 ? 'link' : 'links'}. This takes a moment.`,
+    resultTitle: 'Bulk links',
+    created: (count: number) => `Created ${count} ${count === 1 ? 'link' : 'links'}.`,
+    skippedQuota: (count: number, plan: string, limit: number) =>
+      `${count} skipped: the ${plan} plan allows ${limit} ${limit === 1 ? 'link' : 'links'} per channel.`,
+    skippedBatch: (count: number, max: number) => `${count} skipped: at most ${max} names per batch.`,
+    stopped: (reason: string) =>
+      `Telegram stopped the batch: ${reason}. Everything listed here was created and is live.`,
+    saveFailedReason: 'the link could not be saved',
+    nothingCreated: 'No links were created.',
+    resultFooter: 'The CSV below has one row per link, ready to paste into your ad manager.',
   },
 
   stats: {

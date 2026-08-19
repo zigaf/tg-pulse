@@ -14,7 +14,7 @@ import { EmptyState, ErrorState, SkeletonRows } from '../shared/States';
 import table from '../shared/table.module.css';
 import ui from '../shared/ui.module.css';
 import { UpgradeCard } from '../shared/UpgradeCard';
-import { useFeatureLocked, useWorkspace } from '../shell/workspace-context';
+import { useFeatureLocked, useIsViewer, useWorkspace } from '../shell/workspace-context';
 import { AddPostbackModal } from './AddPostbackModal';
 import styles from './postbacks.module.css';
 
@@ -44,6 +44,7 @@ function TestResultLabel({ result }: { result: TestResult }) {
 
 function PostbackRow({
   postback,
+  canMutate,
   isToggling,
   isConfirming,
   isDeleting,
@@ -53,6 +54,7 @@ function PostbackRow({
   onDeleteClick,
 }: {
   postback: ApiPostback;
+  canMutate: boolean;
   isToggling: boolean;
   isConfirming: boolean;
   isDeleting: boolean;
@@ -81,27 +83,31 @@ function PostbackRow({
           aria-label={postback.isActive ? 'Deactivate postback' : 'Activate postback'}
           className={`${styles.toggle} ${postback.isActive ? styles.toggleOn : ''}`}
           onClick={() => onToggle(postback)}
-          disabled={isToggling}
+          disabled={isToggling || !canMutate}
         />
       </span>
       <span className={styles.actionsCell}>
         {testResult ? <TestResultLabel result={testResult} /> : null}
-        <button
-          type="button"
-          className={styles.testBtn}
-          onClick={() => onTest(postback.id)}
-          disabled={testResult?.pending === true}
-        >
-          Test
-        </button>
-        <button
-          type="button"
-          className={`${styles.deleteBtn} ${isConfirming ? styles.deleteConfirm : ''}`}
-          onClick={() => onDeleteClick(postback.id)}
-          disabled={isDeleting}
-        >
-          {isDeleting ? 'Deleting' : isConfirming ? 'Confirm?' : 'Delete'}
-        </button>
+        {canMutate ? (
+          <>
+            <button
+              type="button"
+              className={styles.testBtn}
+              onClick={() => onTest(postback.id)}
+              disabled={testResult?.pending === true}
+            >
+              Test
+            </button>
+            <button
+              type="button"
+              className={`${styles.deleteBtn} ${isConfirming ? styles.deleteConfirm : ''}`}
+              onClick={() => onDeleteClick(postback.id)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting' : isConfirming ? 'Confirm?' : 'Delete'}
+            </button>
+          </>
+        ) : null}
       </span>
     </div>
   );
@@ -126,7 +132,9 @@ export function PostbacksView({ channelId }: { channelId: string }) {
    */
   const isLockedByPlan = useFeatureLocked('postbacks');
   const workspace = useWorkspace();
+  const isViewer = useIsViewer();
   const isLocked = isLockedByPlan || isLockedByApi;
+  const canMutate = !isLocked && !isViewer;
 
   const load = useCallback(async () => {
     setError(null);
@@ -209,12 +217,12 @@ export function PostbacksView({ channelId }: { channelId: string }) {
         <h1 id="postbacks-heading" className={styles.pageTitle}>
           Postbacks
         </h1>
-        {isLocked ? null : (
+        {canMutate ? (
           <button type="button" className={ui.btnPrimary} onClick={() => setIsModalOpen(true)}>
             <Plus size={15} weight="bold" />
             Add postback
           </button>
-        )}
+        ) : null}
       </header>
 
       {isLocked ? (
@@ -242,10 +250,12 @@ export function PostbacksView({ channelId }: { channelId: string }) {
                 you define. Macros like {'{yclid}'} or {'{cid}'} are replaced with real values, so conversions land
                 in the right campaign.
               </p>
-              <button type="button" className={ui.btn} onClick={() => setIsModalOpen(true)}>
-                <Plus size={14} weight="bold" />
-                Add postback
-              </button>
+              {canMutate ? (
+                <button type="button" className={ui.btn} onClick={() => setIsModalOpen(true)}>
+                  <Plus size={14} weight="bold" />
+                  Add postback
+                </button>
+              ) : null}
             </EmptyState>
           </div>
         )
@@ -263,6 +273,7 @@ export function PostbacksView({ channelId }: { channelId: string }) {
               <PostbackRow
                 key={postback.id}
                 postback={postback}
+                canMutate={canMutate}
                 isToggling={togglingId === postback.id}
                 isConfirming={confirmingId === postback.id}
                 isDeleting={deletingId === postback.id}

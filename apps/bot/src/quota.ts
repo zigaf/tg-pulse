@@ -82,6 +82,38 @@ export async function checkLinkQuota(channel: Channel): Promise<LinkGate> {
     : { allowed: false, plan, reason: 'links', limit: linksPerChannel };
 }
 
+/** A batch also needs to know how much room is left, not only whether one link fits. */
+export type BulkLinkGate =
+  | Extract<LinkGate, { allowed: false }>
+  | {
+      allowed: true;
+      plan: Plan;
+      /** Per-channel link limit of the plan, null when unlimited. */
+      limit: number | null;
+      /** How many more links fit right now, null when unlimited. */
+      remaining: number | null;
+    };
+
+/** Everything the /bulklinks flow needs: the same gate plus the room left in it. */
+export async function checkBulkLinkQuota(channel: Channel): Promise<BulkLinkGate> {
+  const gate = await checkLinkQuota(channel);
+  if (!gate.allowed) return gate;
+
+  const entitlements = await getEntitlements(channel.workspaceId);
+  const { linksPerChannel } = entitlements.limits;
+  if (linksPerChannel === null) {
+    return { allowed: true, plan: entitlements.plan, limit: null, remaining: null };
+  }
+
+  const used = await countChannelLinks(channel.id);
+  return {
+    allowed: true,
+    plan: entitlements.plan,
+    limit: linksPerChannel,
+    remaining: Math.max(0, linksPerChannel - used),
+  };
+}
+
 /**
  * FREE keeps the full fraud report for the newest link of a channel; older ones are gated.
  * Paid plans see every report.

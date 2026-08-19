@@ -1,0 +1,45 @@
+import type { NextRequest } from 'next/server';
+import { buildChannelReport } from '@/server/analytics';
+import { handleRouteError, jsonOk } from '@/server/http';
+import { recordShareView, resolvePublicShareLink } from '@/server/share-links';
+
+export const runtime = 'nodejs';
+/** Numbers must be current on every open, and the response is per-token anyway. */
+export const dynamic = 'force-dynamic';
+
+/**
+ * Public read-only report (docs/PHASE7-BUILD.md §2). No session, no cookies.
+ *
+ * The payload is deliberately narrow: channel name, window, aggregate totals, the daily
+ * series and the source breakdown by label. It must never carry subscriber identities,
+ * revenue, API keys, member data or internal ids.
+ */
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
+  try {
+    const { token } = await ctx.params;
+    const share = await resolvePublicShareLink(token);
+
+    const report = await buildChannelReport(share.channel.id, share.windowDays);
+
+    // Counting a view must never delay or break the report.
+    recordShareView(share.id);
+
+    return jsonOk({
+      channel: { title: share.channel.title, username: share.channel.username },
+      label: share.label,
+      windowDays: share.windowDays,
+      generatedAt: new Date(),
+      totals: report.totals,
+      series: report.series,
+      sources: report.sources.map((source) => ({
+        label: source.label,
+        clicks: source.clicks,
+        joins: source.joins,
+        leaves: source.leaves,
+        unsubRate: source.unsubRate,
+      })),
+    });
+  } catch (error) {
+    return handleRouteError(error);
+  }
+}

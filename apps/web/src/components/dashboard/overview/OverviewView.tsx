@@ -1,10 +1,15 @@
 'use client';
 
-import { ChartLineUp } from '@phosphor-icons/react';
+import { ChartLineUp, ShareNetwork } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { getOverview, type OverviewData } from '@/lib/api';
+import { BuyersPanel } from '../buyers/BuyersPanel';
+import { ShareLinksPanel } from '../share/ShareLinksPanel';
+import { ShareReportModal } from '../share/ShareReportModal';
 import { EmptyState, ErrorState, SkeletonRows, Skeleton } from '../shared/States';
 import ui from '../shared/ui.module.css';
+import { UpgradeNotice } from '../shared/UpgradeCard';
+import { useIsViewer, useWorkspace } from '../shell/workspace-context';
 import { RangeToggle, type RangeDays } from './RangeToggle';
 import { SourceBreakdown } from './SourceBreakdown';
 import { StatTiles, StatTilesSkeleton } from './StatTiles';
@@ -26,13 +31,19 @@ function OverviewSkeleton() {
   );
 }
 
-/** Channel overview: totals, joins/leaves chart, per-source attribution. */
+/** Channel overview: totals, joins/leaves chart, per-source attribution, buyers, shared reports. */
 export function OverviewView({ channelId }: { channelId: string }) {
   const [days, setDays] = useState<RangeDays>(7);
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareRefreshKey, setShareRefreshKey] = useState(0);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+
+  const workspace = useWorkspace();
+  const isViewer = useIsViewer();
 
   const retry = useCallback(() => setReloadKey((key) => key + 1), []);
 
@@ -59,8 +70,18 @@ export function OverviewView({ channelId }: { channelId: string }) {
         <h1 id="overview-heading" className={styles.pageTitle}>
           Overview
         </h1>
-        <RangeToggle value={days} onChange={setDays} />
+        <div className={styles.headActions}>
+          {isViewer ? null : (
+            <button type="button" className={ui.btnGhost} onClick={() => setIsShareOpen(true)}>
+              <ShareNetwork size={15} />
+              Share report
+            </button>
+          )}
+          <RangeToggle value={days} onChange={setDays} />
+        </div>
       </header>
+
+      {upgradeMessage ? <UpgradeNotice message={upgradeMessage} workspaceId={workspace?.id} /> : null}
 
       {error && !data ? (
         <div className={ui.card}>
@@ -69,34 +90,47 @@ export function OverviewView({ channelId }: { channelId: string }) {
       ) : !data && isLoading ? (
         <OverviewSkeleton />
       ) : data ? (
-        <div className={isLoading ? styles.refreshing : undefined}>
-          <StatTiles totals={data.totals} />
+        <>
+          <div className={isLoading ? styles.refreshing : undefined}>
+            <StatTiles totals={data.totals} />
 
-          <div className={`${ui.card} ${styles.chartCard}`}>
-            {hasActivity ? (
-              <TrendChart series={data.series} />
+            <div className={`${ui.card} ${styles.chartCard}`}>
+              {hasActivity ? (
+                <TrendChart series={data.series} />
+              ) : (
+                <EmptyState icon={<ChartLineUp size={26} weight="duotone" />} title="No activity yet">
+                  <p>Joins and leaves will appear here once the bot starts tracking members.</p>
+                </EmptyState>
+              )}
+            </div>
+
+            <div className={styles.sectionHead}>
+              <h2 className={styles.sectionTitle}>Sources</h2>
+              <p className={styles.sectionHint}>Last {days} days, attributed via tracked links</p>
+            </div>
+            {data.sources.length === 0 ? (
+              <div className={ui.card}>
+                <EmptyState title="No sources yet">
+                  <p>Create a tracked link on the Links page to start attributing joins.</p>
+                </EmptyState>
+              </div>
             ) : (
-              <EmptyState icon={<ChartLineUp size={26} weight="duotone" />} title="No activity yet">
-                <p>Joins and leaves will appear here once the bot starts tracking members.</p>
-              </EmptyState>
+              <SourceBreakdown sources={data.sources} />
             )}
           </div>
 
-          <div className={styles.sectionHead}>
-            <h2 className={styles.sectionTitle}>Sources</h2>
-            <p className={styles.sectionHint}>Last {days} days, attributed via tracked links</p>
-          </div>
-          {data.sources.length === 0 ? (
-            <div className={ui.card}>
-              <EmptyState title="No sources yet">
-                <p>Create a tracked link on the Links page to start attributing joins.</p>
-              </EmptyState>
-            </div>
-          ) : (
-            <SourceBreakdown sources={data.sources} />
-          )}
-        </div>
+          <BuyersPanel channelId={channelId} days={days} />
+          <ShareLinksPanel channelId={channelId} refreshKey={shareRefreshKey} canRevoke={!isViewer} />
+        </>
       ) : null}
+
+      <ShareReportModal
+        channelId={channelId}
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        onCreated={() => setShareRefreshKey((key) => key + 1)}
+        onUpgradeRequired={setUpgradeMessage}
+      />
     </section>
   );
 }

@@ -1,5 +1,5 @@
 import { getPrisma, EventType, type Channel } from '@tgpulse/db';
-import { resolveLinkLabels } from './queries';
+import { resolveLinkRefs } from './queries';
 import type { SourceRef } from './sources';
 
 const prisma = getPrisma();
@@ -76,7 +76,7 @@ export async function collectChannelStats(channel: Channel, now = new Date()): P
 
   const sorted = [...bySource].sort((a, b) => b._count._all - a._count._all);
   const top = sorted.slice(0, TOP_SOURCES_LIMIT);
-  const labels = await resolveLinkLabels(top.map((r) => r.linkId).filter((id): id is string => id !== null));
+  const refs = await resolveLinkRefs(top.map((r) => r.linkId).filter((id): id is string => id !== null));
 
   return {
     title: channel.title,
@@ -84,11 +84,15 @@ export async function collectChannelStats(channel: Channel, now = new Date()): P
     leaves,
     previousJoins,
     dailyJoins,
-    topSources: top.map((row) => ({
-      linkId: row.linkId,
-      label: row.linkId ? (labels.get(row.linkId) ?? null) : null,
-      joins: row._count._all,
-    })),
+    topSources: top.map((row) => {
+      const ref = row.linkId ? refs.get(row.linkId) : undefined;
+      return {
+        linkId: row.linkId,
+        label: ref?.label ?? null,
+        buyer: ref?.buyer ?? null,
+        joins: row._count._all,
+      };
+    }),
     sourceJoins: sorted.reduce((sum, row) => sum + row._count._all, 0),
   };
 }

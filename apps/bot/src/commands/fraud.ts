@@ -20,7 +20,7 @@ async function buildLinksView(
 ): Promise<{ text: string; keyboard: InlineKeyboard }> {
   const reports = await analyzeChannelLinks(channel.id, FRAUD_LINKS_LIMIT);
   return {
-    text: fraudLinksCard(dict, channel.title, reports.length > 0),
+    text: fraudLinksCard(dict, channel.title, reports),
     keyboard: fraudLinksMenu(
       dict,
       reports.map((report) => ({ linkId: report.linkId, title: fraudLinkButton(dict, report) })),

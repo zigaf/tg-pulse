@@ -6,6 +6,7 @@ import { getPrisma } from '@tgpulse/db';
 import { startBillingCron } from './billing-sweep';
 import { bot } from './bot';
 import { registerBilling } from './commands/billing';
+import { registerBulklinks } from './commands/bulklinks';
 import { registerChannels } from './commands/channels';
 import { registerFraud } from './commands/fraud';
 import { registerHelp } from './commands/help';
@@ -32,6 +33,7 @@ registerFraud(bot);
 registerNotifications(bot);
 registerStats(bot);
 registerNewlink(bot);
+registerBulklinks(bot);
 registerUpgrade(bot);
 registerBilling(bot);
 registerReports(bot);
@@ -128,6 +130,7 @@ function commandList(dict: Dict): { command: string; description: string }[] {
   return [
     { command: 'start', description: dict.commands.start },
     { command: 'newlink', description: dict.commands.newlink },
+    { command: 'bulklinks', description: dict.commands.bulklinks },
     { command: 'stats', description: dict.commands.stats },
     { command: 'channels', description: dict.commands.channels },
     { command: 'fraud', description: dict.commands.fraud },

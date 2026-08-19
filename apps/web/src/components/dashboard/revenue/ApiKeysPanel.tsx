@@ -7,6 +7,7 @@ import { formatFullDate } from '@/lib/format';
 import { EmptyState, ErrorState, SkeletonRows } from '../shared/States';
 import table from '../shared/table.module.css';
 import ui from '../shared/ui.module.css';
+import { useIsViewer } from '../shell/workspace-context';
 import { NewKeyModal } from './NewKeyModal';
 import styles from './revenue.module.css';
 
@@ -15,11 +16,13 @@ const CONFIRM_RESET_MS = 3000;
 
 function KeyRow({
   apiKey,
+  canMutate,
   isConfirming,
   isRevoking,
   onRevokeClick,
 }: {
   apiKey: ApiApiKey;
+  canMutate: boolean;
   isConfirming: boolean;
   isRevoking: boolean;
   onRevokeClick: (id: string) => void;
@@ -38,7 +41,7 @@ function KeyRow({
         {isRevoked ? <span className={ui.badgeNegative}>revoked</span> : <span className={ui.badgePositive}>active</span>}
       </span>
       <span className={styles.actionsCell}>
-        {isRevoked ? null : (
+        {isRevoked || !canMutate ? null : (
           <button
             type="button"
             className={`${styles.revokeBtn} ${isConfirming ? styles.revokeConfirm : ''}`}
@@ -63,6 +66,8 @@ export function ApiKeysPanel({ channelId }: { channelId: string }) {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Key management is an owner/admin action; viewers read the list only.
+  const canMutate = !useIsViewer();
 
   const load = useCallback(async () => {
     setError(null);
@@ -125,10 +130,12 @@ export function ApiKeysPanel({ channelId }: { channelId: string }) {
             API keys
           </h2>
         </span>
-        <button type="button" className={ui.btn} onClick={() => void handleCreate()} disabled={isCreating}>
-          <Plus size={14} weight="bold" />
-          {isCreating ? 'Creating' : 'Create key'}
-        </button>
+        {canMutate ? (
+          <button type="button" className={ui.btn} onClick={() => void handleCreate()} disabled={isCreating}>
+            <Plus size={14} weight="bold" />
+            {isCreating ? 'Creating' : 'Create key'}
+          </button>
+        ) : null}
       </header>
 
       <p className={styles.panelHint}>
@@ -163,6 +170,7 @@ export function ApiKeysPanel({ channelId }: { channelId: string }) {
               <KeyRow
                 key={apiKey.id}
                 apiKey={apiKey}
+                canMutate={canMutate}
                 isConfirming={confirmingId === apiKey.id}
                 isRevoking={revokingId === apiKey.id}
                 onRevokeClick={(id) => void handleRevokeClick(id)}

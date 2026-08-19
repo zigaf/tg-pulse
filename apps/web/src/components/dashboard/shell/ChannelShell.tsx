@@ -8,17 +8,26 @@ import {
   Lock,
   PaperPlaneTilt,
   SignOut,
+  UsersFour,
   UsersThree,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { getMe, logout, type ApiChannel, type ApiWorkspace } from '@/lib/api';
+import {
+  getMe,
+  getMembers,
+  logout,
+  type ApiChannel,
+  type ApiWorkspace,
+  type WorkspaceRole,
+} from '@/lib/api';
 import { isFeatureLocked, normalizePlan, type GatedFeature } from '@/lib/billing';
 import { formatNumber } from '@/lib/format';
 import { PlanBadge } from '../shared/PlanBadge';
 import { Skeleton } from '../shared/States';
 import { billingHref } from '../shared/UpgradeCard';
+import { teamHref } from '../team/team-href';
 import { WorkspaceProvider } from './workspace-context';
 import styles from './shell.module.css';
 
@@ -43,21 +52,40 @@ export function ChannelShell({ channelId, children }: { channelId: string; child
   const router = useRouter();
   const [channel, setChannel] = useState<ApiChannel | null>(null);
   const [workspace, setWorkspace] = useState<ApiWorkspace | null>(null);
+  const [role, setRole] = useState<WorkspaceRole | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    void getMe().then((result) => {
+
+    const resolve = async () => {
+      const result = await getMe();
       if (cancelled) return;
       if (!result.ok) {
         if (result.status === 401) router.replace('/app');
         return;
       }
+
       const owner = result.data.workspaces.find((item) =>
         item.channels.some((candidate) => candidate.id === channelId),
       );
       setWorkspace(owner ?? null);
       setChannel(owner?.channels.find((candidate) => candidate.id === channelId) ?? null);
-    });
+
+      if (!owner) return;
+      if (owner.role) {
+        setRole(owner.role);
+        return;
+      }
+
+      // Older server builds do not put the role on /api/me, so read it from the member list.
+      // A failure here just leaves the role unknown: the API still answers 403 on a real gate.
+      const members = await getMembers(owner.id);
+      if (cancelled || !members.ok) return;
+      const self = members.data.members.find((member) => member.userId === result.data.user.id);
+      setRole(members.data.role ?? self?.role ?? null);
+    };
+
+    void resolve();
     return () => {
       cancelled = true;
     };
@@ -140,6 +168,13 @@ export function ChannelShell({ channelId, children }: { channelId: string; child
               </Link>
             );
           })}
+
+          {/* Workspace-level, so it sits apart from the channel sections. */}
+          <span className={styles.navDivider} aria-hidden="true" />
+          <Link href={teamHref(workspace?.id)} className={styles.navItem}>
+            <UsersFour size={17} />
+            <span>Team</span>
+          </Link>
         </nav>
 
         <button type="button" className={styles.signOut} onClick={() => void handleSignOut()}>
@@ -149,7 +184,9 @@ export function ChannelShell({ channelId, children }: { channelId: string; child
       </aside>
 
       <div className={styles.content}>
-        <WorkspaceProvider workspace={workspace}>{children}</WorkspaceProvider>
+        <WorkspaceProvider workspace={workspace} role={role}>
+          {children}
+        </WorkspaceProvider>
       </div>
     </div>
   );

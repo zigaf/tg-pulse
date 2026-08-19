@@ -1,15 +1,25 @@
 'use client';
 
 import { CircleNotch, Pulse } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { authTelegram, type TelegramAuthPayload } from '@/lib/api';
 import { TelegramLoginWidget } from './TelegramLoginWidget';
 import styles from './login.module.css';
 
 type Phase = 'idle' | 'pending' | 'error';
 
+interface LoginCardProps {
+  title?: string;
+  subtitle?: ReactNode;
+  /**
+   * Called instead of reloading the page once the session cookie is set.
+   * The invite screen uses it to retry the accept without losing the token.
+   */
+  onSignedIn?: () => void;
+}
+
 /** Centered sign-in card shown when GET /api/me returns 401. */
-export function LoginCard() {
+export function LoginCard({ title = 'Sign in to TGPulse', subtitle, onSignedIn }: LoginCardProps = {}) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
 
@@ -18,7 +28,8 @@ export function LoginCard() {
     setError('');
     const result = await authTelegram(payload);
     if (result.ok) {
-      window.location.reload();
+      if (onSignedIn) onSignedIn();
+      else window.location.reload();
       return;
     }
     setError(result.error);
@@ -33,10 +44,10 @@ export function LoginCard() {
           <Pulse size={22} weight="bold" />
         </span>
         <h1 id="login-heading" className={styles.title}>
-          Sign in to TGPulse
+          {title}
         </h1>
         <p className={styles.subtitle}>
-          Use your Telegram account. We only read your public profile, nothing else.
+          {subtitle ?? 'Use your Telegram account. We only read your public profile, nothing else.'}
         </p>
 
         {phase === 'pending' ? (

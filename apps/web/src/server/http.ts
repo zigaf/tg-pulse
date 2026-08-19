@@ -51,6 +51,30 @@ export async function readJsonBody(req: Request): Promise<unknown> {
   }
 }
 
+/**
+ * Origin this request was addressed to, honouring the proxy headers the platform sets.
+ *
+ * Only used to render links back to this app for the caller who just asked for them,
+ * never for a trust decision — `Host` is client-controlled.
+ */
+export function requestOrigin(req: Request): string {
+  const firstValue = (raw: string | null): string | null => {
+    const value = raw?.split(',')[0]?.trim();
+    return value ? value : null;
+  };
+
+  const host =
+    firstValue(req.headers.get('x-forwarded-host')) ?? firstValue(req.headers.get('host'));
+  if (host) {
+    const proto =
+      firstValue(req.headers.get('x-forwarded-proto')) ??
+      (process.env.NODE_ENV === 'production' ? 'https' : 'http');
+    return `${proto}://${host}`;
+  }
+
+  return new URL(req.url).origin;
+}
+
 /** Map thrown errors to the { ok: false, error } envelope without leaking stack traces. */
 export function handleRouteError(error: unknown): NextResponse {
   if (error instanceof ApiError) {

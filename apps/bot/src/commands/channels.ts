@@ -1,8 +1,8 @@
 import type { Bot } from 'grammy';
 import { getPrisma, EventType, type Channel } from '@tgpulse/db';
-import { config } from '../config';
 import type { BotContext } from '../context';
 import type { Dict } from '../i18n';
+import { goUrl } from '../links';
 import { backToChannelMenu, channelMenu, channelsListMenu, CHANNELS_PAGE_SIZE } from '../menus';
 import { getUserActiveChannels, getUserChannel } from '../queries';
 import { collectChannelStats } from '../stats';
@@ -45,8 +45,10 @@ async function loadLinkRows(channel: Channel): Promise<LinkRow[]> {
     label: link.label,
     clicks: link._count.clicks,
     joins: joinsByLink.get(link.id) ?? 0,
-    goUrl: `${config.goBaseUrl}/l/${link.slug}`,
+    goUrl: goUrl(link.slug),
     isRevoked: link.isRevoked,
+    isLandingPost: link.targetPostUrl !== null,
+    buyer: link.buyer,
   }));
 }
 

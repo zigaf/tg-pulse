@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { assertApiKeyAccess, revokeApiKey, toApiKeyDto } from '@/server/api-keys';
 import { getSessionUserId } from '@/server/auth';
 import { handleRouteError, jsonError, jsonOk } from '@/server/http';
+import { assertCanMutateChannel } from '@/server/roles';
 
 export const runtime = 'nodejs';
 
@@ -12,6 +13,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
     const { id } = await ctx.params;
     const key = await assertApiKeyAccess(userId, id);
+    await assertCanMutateChannel(userId, key.channelId);
 
     // Idempotent: revoking twice is a no-op.
     const revoked = await revokeApiKey(key.id);

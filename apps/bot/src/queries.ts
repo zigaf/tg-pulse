@@ -66,12 +66,18 @@ export async function getOnboardingProgress(
   return { hasChannel: true, hasLink: link !== null };
 }
 
-/** Map of TrackedLink id -> label for the given ids (nulls filtered out by caller). */
-export async function resolveLinkLabels(linkIds: string[]): Promise<Map<string, string>> {
+/** How a grouped-by-link row is named on screen. */
+export interface LinkRef {
+  label: string;
+  buyer: string | null;
+}
+
+/** Map of TrackedLink id -> display data for the given ids (nulls filtered out by caller). */
+export async function resolveLinkRefs(linkIds: string[]): Promise<Map<string, LinkRef>> {
   if (linkIds.length === 0) return new Map();
   const links = await prisma.trackedLink.findMany({
     where: { id: { in: linkIds } },
-    select: { id: true, label: true },
+    select: { id: true, label: true, buyer: true },
   });
-  return new Map(links.map((l) => [l.id, l.label]));
+  return new Map(links.map((l) => [l.id, { label: l.label, buyer: l.buyer }]));
 }

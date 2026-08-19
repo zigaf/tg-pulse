@@ -20,6 +20,7 @@ export function toLinkDto(link: TrackedLink, stats: LinkStats) {
     url: trackedLinkUrl(link.slug),
     label: link.label,
     creative: link.creative,
+    buyer: link.buyer,
     utmSource: link.utmSource,
     utmMedium: link.utmMedium,
     utmCampaign: link.utmCampaign,

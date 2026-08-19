@@ -6,6 +6,7 @@ import { getSessionUserId } from '@/server/auth';
 import { assertFeature } from '@/server/entitlements';
 import { ApiError, handleRouteError, jsonError, jsonOk, parseOrThrow, readJsonBody } from '@/server/http';
 import { assertValidUrlTemplate, toPostbackDto } from '@/server/postbacks';
+import { assertCanMutateChannel } from '@/server/roles';
 
 export const runtime = 'nodejs';
 
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     if (!userId) return jsonError(401, 'Unauthorized');
 
     const { id: channelId } = await ctx.params;
-    const channel = await assertChannelAccess(userId, channelId);
+    const channel = await assertCanMutateChannel(userId, channelId);
     // Listing stays open on FREE so a downgraded workspace still sees what it had.
     await assertFeature(channel.workspaceId, 'postbacks');
 

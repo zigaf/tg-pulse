@@ -33,6 +33,29 @@
   gap: 0.9rem;
 }
 
+.topbarLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  border-radius: 8px;
+  padding: 0.25rem 0.45rem;
+  transition:
+    color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+
+.topbarLink:hover {
+  color: var(--color-text);
+  background: oklch(24% 0.025 290 / 0.5);
+}
+
+.topbarLink:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 2px;
+}
+
 .userName {
   font-size: 0.8rem;
   color: var(--color-text-muted);
@@ -182,5 +205,9 @@
 
   .userName {
     display: none;
+  }
+
+  .topbarRight {
+    gap: 0.5rem;
   }
 }

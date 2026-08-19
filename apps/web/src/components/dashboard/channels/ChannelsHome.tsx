@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight, Broadcast, Pulse, SignOut, TelegramLogo } from '@phosphor-icons/react';
+import { ArrowUpRight, Broadcast, Pulse, SignOut, TelegramLogo, UsersFour } from '@phosphor-icons/react';
 import Link from 'next/link';
 import type { ApiChannel, MeData } from '@/lib/api';
 import { logout } from '@/lib/api';
@@ -8,6 +8,7 @@ import { normalizePlan } from '@/lib/billing';
 import { BOT_USERNAME, formatNumber } from '@/lib/format';
 import { PlanBadge } from '../shared/PlanBadge';
 import { EmptyState } from '../shared/States';
+import { teamHref } from '../team/team-href';
 import ui from '../shared/ui.module.css';
 import styles from './channels.module.css';
 
@@ -80,6 +81,10 @@ export function ChannelsHome({ me }: { me: MeData }) {
           TGPulse
         </span>
         <div className={styles.topbarRight}>
+          <Link href={teamHref(primaryWorkspace?.id)} className={styles.topbarLink}>
+            <UsersFour size={15} />
+            Team
+          </Link>
           {primaryWorkspace ? (
             <PlanBadge plan={normalizePlan(primaryWorkspace.plan)} workspaceId={primaryWorkspace.id} />
           ) : null}

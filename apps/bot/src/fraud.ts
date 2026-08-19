@@ -69,6 +69,8 @@ export interface FraudSignal {
 export interface FraudReport {
   linkId: string;
   label: string;
+  /** Landing-post links attribute by time window, so their numbers are weaker evidence. */
+  isLandingPost: boolean;
   verdict: FraudVerdict;
   score: number;
   joins: number;
@@ -184,7 +186,13 @@ function scoreSignals(measured: Map<SignalKey, number>): {
   return { score: Math.round((rawPoints / availableWeight) * 100), signals };
 }
 
-async function buildReport(link: { id: string; label: string }): Promise<FraudReport> {
+interface LinkFacts {
+  id: string;
+  label: string;
+  targetPostUrl: string | null;
+}
+
+async function buildReport(link: LinkFacts): Promise<FraudReport> {
   const [joinEvents, subscribers, clicks] = await Promise.all([
     prisma.memberEvent.findMany({
       where: { linkId: link.id, type: EventType.JOIN },
@@ -199,7 +207,13 @@ async function buildReport(link: { id: string; label: string }): Promise<FraudRe
   ]);
 
   const joins = joinEvents.length;
-  const base = { linkId: link.id, label: link.label, joins, clicks };
+  const base = {
+    linkId: link.id,
+    label: link.label,
+    isLandingPost: link.targetPostUrl !== null,
+    joins,
+    clicks,
+  };
 
   if (joins < MIN_JOINS_FOR_VERDICT) {
     return { ...base, verdict: 'not_enough_data', score: 0, bursts: [], signals: [], unmeasured: [] };
@@ -241,7 +255,7 @@ async function buildReport(link: { id: string; label: string }): Promise<FraudRe
 export async function analyzeLink(linkId: string): Promise<FraudReport | null> {
   const link = await prisma.trackedLink.findUnique({
     where: { id: linkId },
-    select: { id: true, label: true },
+    select: { id: true, label: true, targetPostUrl: true },
   });
   return link ? buildReport(link) : null;
 }
@@ -252,7 +266,7 @@ export async function analyzeChannelLinks(channelId: string, limit: number): Pro
     where: { channelId },
     orderBy: { createdAt: 'desc' },
     take: limit,
-    select: { id: true, label: true },
+    select: { id: true, label: true, targetPostUrl: true },
   });
   return Promise.all(links.map((link) => buildReport(link)));
 }

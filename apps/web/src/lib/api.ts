@@ -7,7 +7,18 @@
 
 export type ApiResult<T> =
   | { ok: true; data: T }
-  | { ok: false; error: string; status?: number; upgrade?: boolean };
+  | {
+      ok: false;
+      error: string;
+      status?: number;
+      upgrade?: boolean;
+      /**
+       * True when the response carried our JSON envelope, so the route exists and
+       * really answered. False when the request never reached a route (network error,
+       * or an endpoint that is not deployed yet) and the status is a framework default.
+       */
+      envelope?: boolean;
+    };
 
 export interface ApiUser {
   id: string;
@@ -88,6 +99,8 @@ export interface ApiWorkspace {
   id: string;
   name: string;
   plan: Plan;
+  /** Role of the signed-in user. Absent on older server builds; the Team screen resolves it then. */
+  role?: WorkspaceRole;
   /** Absent on older server builds; treat "missing" as "no gate known yet". */
   entitlements?: Entitlements;
   channels: ApiChannel[];
@@ -136,6 +149,8 @@ export interface TrackedLink {
   url: string;
   label: string;
   creative: string | null;
+  /** Media buyer or contractor who owns this placement; null when unassigned. */
+  buyer: string | null;
   utmSource: string | null;
   utmMedium: string | null;
   utmCampaign: string | null;
@@ -154,6 +169,7 @@ export interface TrackedLink {
 export interface CreateLinkInput {
   label: string;
   creative?: string;
+  buyer?: string;
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
@@ -311,7 +327,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T
   try {
     response = await fetch(path, { credentials: 'same-origin', ...init });
   } catch {
-    return { ok: false, error: 'Network error. Check your connection and retry.' };
+    return { ok: false, error: 'Network error. Check your connection and retry.', envelope: false };
   }
 
   const body = (await response.json().catch(() => null)) as ResponseBody<T> | null;
@@ -324,9 +340,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T
       error: body.error || messageForStatus(response.status),
       status: response.status,
       upgrade: body.upgrade === true || isGate,
+      envelope: true,
     };
   }
-  return { ok: false, error: messageForStatus(response.status), status: response.status, upgrade: isGate };
+  return {
+    ok: false,
+    error: messageForStatus(response.status),
+    status: response.status,
+    upgrade: isGate,
+    envelope: false,
+  };
 }
 
 function send<T>(method: 'POST' | 'PATCH', path: string, payload?: unknown): Promise<ApiResult<T>> {
@@ -339,6 +362,10 @@ function send<T>(method: 'POST' | 'PATCH', path: string, payload?: unknown): Pro
 
 function post<T>(path: string, payload?: unknown): Promise<ApiResult<T>> {
   return send<T>('POST', path, payload);
+}
+
+function del<T>(path: string): Promise<ApiResult<T>> {
+  return request<T>(path, { method: 'DELETE' });
 }
 
 export function getMe(): Promise<ApiResult<MeData>> {
@@ -426,4 +453,327 @@ export function authTelegram(payload: TelegramAuthPayload): Promise<ApiResult<{ 
 
 export function logout(): Promise<ApiResult<null>> {
   return post<null>('/api/auth/logout');
+}
+
+/* ---------- team, invites, shared reports, exports, buyers (docs/PHASE7-BUILD.md) ---------- */
+
+export type WorkspaceRole = 'OWNER' | 'ADMIN' | 'VIEWER';
+
+const WORKSPACE_ROLES: readonly WorkspaceRole[] = ['OWNER', 'ADMIN', 'VIEWER'];
+
+/** Anything the server does not recognise reads as the least privileged role. */
+export function normalizeRole(value: unknown): WorkspaceRole {
+  const upper = String(value ?? '').toUpperCase() as WorkspaceRole;
+  return WORKSPACE_ROLES.includes(upper) ? upper : 'VIEWER';
+}
+
+/** OWNER and ADMIN may mutate; VIEWER is read-only (the API answers 403 either way). */
+export function canManage(role: WorkspaceRole | null | undefined): boolean {
+  return role === 'OWNER' || role === 'ADMIN';
+}
+
+export interface WorkspaceMember {
+  userId: string;
+  firstName: string;
+  lastName?: string | null;
+  username?: string | null;
+  photoUrl?: string | null;
+  role: WorkspaceRole;
+  joinedAt: string;
+}
+
+export interface WorkspaceInvite {
+  id: string;
+  role: WorkspaceRole;
+  /** One-time token. Present right after creation; pending rows may hide it. */
+  token?: string | null;
+  /** Absolute accept URL when the server builds one; otherwise composed from the token. */
+  url?: string | null;
+  expiresAt: string;
+  createdAt?: string;
+}
+
+export interface MembersData {
+  members: WorkspaceMember[];
+  invites: WorkspaceInvite[];
+  /** Member quota of the plan. null = unlimited, undefined = the server did not say. */
+  limit?: number | null;
+  /** Role of the signed-in user inside this workspace, when the server reports it. */
+  role?: WorkspaceRole;
+}
+
+/** Payload of a one-time invite before it is accepted. */
+export interface InvitePreview {
+  workspaceName?: string | null;
+  role?: WorkspaceRole;
+  expiresAt?: string | null;
+}
+
+export interface AcceptInviteResult {
+  workspaceId?: string;
+  workspaceName?: string | null;
+}
+
+export type ReportWindowDays = 7 | 30 | 90;
+
+export interface ShareLink {
+  id: string;
+  token: string;
+  label: string | null;
+  windowDays: number;
+  /** null = no expiry. */
+  expiresAt: string | null;
+  revokedAt: string | null;
+  viewCount: number;
+  createdAt: string;
+  /** Absolute URL when the server builds one; otherwise composed from the token. */
+  url?: string | null;
+}
+
+export interface CreateShareLinkInput {
+  label?: string;
+  windowDays: ReportWindowDays;
+  /** Omitted = the link never expires. */
+  expiresInDays?: number;
+}
+
+/** Public report source row. Deliberately carries no identity: no link id, no revenue. */
+export interface PublicReportSource {
+  label: string;
+  clicks: number;
+  joins: number;
+  leaves: number;
+  unsubRate: number;
+}
+
+export interface PublicReportData {
+  channel: { title: string; username: string | null };
+  label?: string | null;
+  windowDays: number;
+  generatedAt?: string | null;
+  totals: OverviewTotals;
+  series: OverviewPoint[];
+  sources: PublicReportSource[];
+}
+
+export interface BuyerRow {
+  /** null = links with no buyer assigned. */
+  buyer: string | null;
+  links: number;
+  clicks: number;
+  joins: number;
+  leaves: number;
+  /** Percent value, e.g. 3.2 means 3.2% */
+  unsubRate: number;
+  /** Present only while the revenue module is on. */
+  revenue?: number | null;
+  currency?: string | null;
+  /** Reserved for the day buyers report spend; not calculated yet. */
+  costPerJoin?: number | null;
+}
+
+export interface BuyersData {
+  buyers: BuyerRow[];
+  /** Dominant currency of the period, when revenue is included. */
+  currency?: string | null;
+}
+
+export type ExportType = 'subscribers' | 'links' | 'events';
+
+/* ---------- url helpers ---------- */
+
+function currentOrigin(): string {
+  return typeof window === 'undefined' ? '' : window.location.origin;
+}
+
+/** Accept URL for a one-time workspace invite. */
+export function inviteUrl(invite: Pick<WorkspaceInvite, 'token' | 'url'>): string {
+  if (invite.url) return invite.url;
+  return invite.token ? `${currentOrigin()}/invite/${invite.token}` : '';
+}
+
+/** Public URL of a shared report. */
+export function shareReportUrl(link: Pick<ShareLink, 'token' | 'url'>): string {
+  if (link.url) return link.url;
+  return link.token ? `${currentOrigin()}/r/${link.token}` : '';
+}
+
+export function exportUrl(channelId: string, type: ExportType, days?: number): string {
+  const search = new URLSearchParams({ type });
+  if (days !== undefined) search.set('days', String(days));
+  return `/api/channels/${channelId}/export?${search.toString()}`;
+}
+
+/* ---------- normalization ---------- */
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+/** Tolerates both `{ members, invites }` and a bare members array. */
+function normalizeMembers(raw: unknown): MembersData {
+  const source = Array.isArray(raw) ? { members: raw } : asRecord(raw);
+  const members = Array.isArray(source.members) ? (source.members as WorkspaceMember[]) : [];
+  const invites = Array.isArray(source.invites) ? (source.invites as WorkspaceInvite[]) : [];
+  const rawLimit = source.limit;
+
+  return {
+    members: members.map((member) => ({ ...member, role: normalizeRole(member.role) })),
+    invites: invites.map((invite) => ({ ...invite, role: normalizeRole(invite.role) })),
+    limit: typeof rawLimit === 'number' ? rawLimit : rawLimit === null ? null : undefined,
+    role: source.role === undefined ? undefined : normalizeRole(source.role),
+  };
+}
+
+/** Tolerates both `{ buyers, currency }` and a bare array. */
+function normalizeBuyers(raw: unknown): BuyersData {
+  if (Array.isArray(raw)) return { buyers: raw as BuyerRow[] };
+  const source = asRecord(raw);
+  return {
+    buyers: Array.isArray(source.buyers) ? (source.buyers as BuyerRow[]) : [],
+    currency: typeof source.currency === 'string' ? source.currency : null,
+  };
+}
+
+/* ---------- team ---------- */
+
+/** Members with role and join date, plus pending invites. */
+export async function getMembers(workspaceId: string): Promise<ApiResult<MembersData>> {
+  const result = await request<unknown>(`/api/workspaces/${workspaceId}/members`);
+  if (!result.ok) return result;
+  return { ok: true, data: normalizeMembers(result.data) };
+}
+
+/** Creates a one-time invite link valid for 7 days. Enforces the member quota (402 on overflow). */
+export function createInvite(workspaceId: string, role: WorkspaceRole): Promise<ApiResult<WorkspaceInvite>> {
+  return post<WorkspaceInvite>(`/api/workspaces/${workspaceId}/invites`, { role });
+}
+
+export function revokeInvite(inviteId: string): Promise<ApiResult<{ id: string }>> {
+  return del<{ id: string }>(`/api/invites/${inviteId}`);
+}
+
+/** Session required. The token is consumed, so this succeeds at most once. */
+export function acceptInvite(token: string): Promise<ApiResult<AcceptInviteResult>> {
+  return post<AcceptInviteResult>(`/api/invites/${encodeURIComponent(token)}/accept`);
+}
+
+/** Optional preflight so the accept screen can name the workspace. Safe to fail. */
+export function getInvite(token: string): Promise<ApiResult<InvitePreview>> {
+  return request<InvitePreview>(`/api/invites/${encodeURIComponent(token)}`);
+}
+
+/** The last OWNER can never be demoted: the server answers 409. */
+export function updateMemberRole(
+  workspaceId: string,
+  userId: string,
+  role: WorkspaceRole,
+): Promise<ApiResult<WorkspaceMember>> {
+  return send<WorkspaceMember>('PATCH', `/api/workspaces/${workspaceId}/members/${userId}`, { role });
+}
+
+/** The last OWNER can never be removed: the server answers 409. */
+export function removeMember(workspaceId: string, userId: string): Promise<ApiResult<{ userId: string }>> {
+  return del<{ userId: string }>(`/api/workspaces/${workspaceId}/members/${userId}`);
+}
+
+/* ---------- shared reports ---------- */
+
+export function getShareLinks(channelId: string): Promise<ApiResult<ShareLink[]>> {
+  return request<ShareLink[]>(`/api/channels/${channelId}/share-links`);
+}
+
+export function createShareLink(channelId: string, input: CreateShareLinkInput): Promise<ApiResult<ShareLink>> {
+  return post<ShareLink>(`/api/channels/${channelId}/share-links`, input);
+}
+
+export function revokeShareLink(id: string): Promise<ApiResult<ShareLink>> {
+  return post<ShareLink>(`/api/share-links/${id}/revoke`);
+}
+
+/** Public, no session. Never returns subscriber identities, revenue, keys or members. */
+export function getPublicReport(token: string): Promise<ApiResult<PublicReportData>> {
+  return request<PublicReportData>(`/api/share/${encodeURIComponent(token)}`);
+}
+
+/* ---------- buyers ---------- */
+
+export async function getBuyers(channelId: string, days: number): Promise<ApiResult<BuyersData>> {
+  const result = await request<unknown>(`/api/channels/${channelId}/buyers?days=${days}`);
+  if (!result.ok) return result;
+  return { ok: true, data: normalizeBuyers(result.data) };
+}
+
+/* ---------- exports ---------- */
+
+const FILENAME_PATTERN = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i;
+
+function filenameFromDisposition(header: string | null, fallback: string): string {
+  if (!header) return fallback;
+  const match = FILENAME_PATTERN.exec(header);
+  if (!match) return fallback;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+/**
+ * Streams the CSV through fetch instead of navigating, so a 402 or 403 stays on the page
+ * and can be shown inline. The response is turned into a blob and saved with the
+ * filename the server picked.
+ */
+export interface ExportResult {
+  filename: string;
+  /** True when the plan row cap cut the file short (X-Export-Truncated). */
+  truncated: boolean;
+  rowCount: number | null;
+}
+
+export async function downloadExport(
+  channelId: string,
+  type: ExportType,
+  days?: number,
+): Promise<ApiResult<ExportResult>> {
+  const url = exportUrl(channelId, type, days);
+
+  let response: Response;
+  try {
+    response = await fetch(url, { credentials: 'same-origin' });
+  } catch {
+    return { ok: false, error: 'Network error. Check your connection and retry.', envelope: false };
+  }
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: string; upgrade?: boolean } | null;
+    const isGate = response.status === PAYMENT_REQUIRED;
+    return {
+      ok: false,
+      error: body?.error || messageForStatus(response.status),
+      status: response.status,
+      upgrade: body?.upgrade === true || isGate,
+      envelope: body !== null,
+    };
+  }
+
+  const filename = filenameFromDisposition(
+    response.headers.get('Content-Disposition'),
+    `tgpulse-${type}.csv`,
+  );
+  const truncated = response.headers.get('X-Export-Truncated') === 'true';
+  const rawRowCount = Number(response.headers.get('X-Export-Rows'));
+  const rowCount = Number.isFinite(rawRowCount) ? rawRowCount : null;
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+
+  return { ok: true, data: { filename, truncated, rowCount } };
 }

@@ -1,20 +1,24 @@
 'use client';
 
 import { LinkSimple, Plus } from '@phosphor-icons/react';
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { getLinks, revokeLink, type TrackedLink } from '@/lib/api';
 import { formatFullDate, formatNumber } from '@/lib/format';
+import { ExportButton, ExportLimitNote } from '../shared/ExportButton';
 import { EmptyState, ErrorState, SkeletonRows } from '../shared/States';
 import table from '../shared/table.module.css';
 import ui from '../shared/ui.module.css';
 import { UpgradeNotice } from '../shared/UpgradeCard';
-import { useWorkspace } from '../shell/workspace-context';
+import { useIsViewer, useWorkspace } from '../shell/workspace-context';
 import { CopyButton } from './CopyButton';
 import { CreateLinkModal } from './CreateLinkModal';
 import { InstallPixelModal } from './InstallPixelModal';
 import styles from './links.module.css';
 
-const TABLE_STYLE = { '--cols': '1.3fr 1.4fr 0.45fr 0.45fr 0.45fr 0.7fr 0.75fr 1.15fr', '--min-width': '900px' } as CSSProperties;
+const TABLE_STYLE = {
+  '--cols': '1.25fr 1.3fr 0.7fr 0.45fr 0.45fr 0.45fr 0.7fr 0.75fr 1.15fr',
+  '--min-width': '1020px',
+} as CSSProperties;
 const CONFIRM_RESET_MS = 3000;
 
 function shortUrl(url: string): string {
@@ -38,12 +42,14 @@ function LandingCell({ views, clicks }: { views: number; clicks: number }) {
 
 function LinkRow({
   link,
+  canMutate,
   isConfirming,
   isRevoking,
   onRevokeClick,
   onInstallPixel,
 }: {
   link: TrackedLink;
+  canMutate: boolean;
   isConfirming: boolean;
   isRevoking: boolean;
   onRevokeClick: (id: string) => void;
@@ -59,6 +65,9 @@ function LinkRow({
         <span className={styles.url}>{shortUrl(link.url)}</span>
         <CopyButton text={link.url} />
       </span>
+      <span className={`${styles.buyerCell} ${link.buyer ? '' : styles.buyerEmpty}`}>
+        {link.buyer || 'unassigned'}
+      </span>
       <span className={table.num}>{formatNumber(link.clicks)}</span>
       <span className={table.numStrong}>{formatNumber(link.joins)}</span>
       <span className={table.num}>{formatNumber(link.leaves)}</span>
@@ -70,7 +79,7 @@ function LinkRow({
         </button>
         {link.isRevoked ? (
           <span className={ui.badgeNegative}>revoked</span>
-        ) : (
+        ) : canMutate ? (
           <button
             type="button"
             className={`${styles.revokeBtn} ${isConfirming ? styles.revokeConfirm : ''}`}
@@ -79,13 +88,13 @@ function LinkRow({
           >
             {isRevoking ? 'Revoking' : isConfirming ? 'Confirm?' : 'Revoke'}
           </button>
-        )}
+        ) : null}
       </span>
     </div>
   );
 }
 
-/** Tracked links: list, create, copy go-URL, revoke with inline confirm. */
+/** Tracked links: list, create, copy go-URL, revoke with inline confirm, CSV export. */
 export function LinksView({ channelId }: { channelId: string }) {
   const [links, setLinks] = useState<TrackedLink[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +106,7 @@ export function LinksView({ channelId }: { channelId: string }) {
   const [upgradeMessage, setUpgradeMessage] = useState('');
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const workspace = useWorkspace();
+  const isViewer = useIsViewer();
 
   const load = useCallback(async () => {
     setError(null);
@@ -112,6 +122,14 @@ export function LinksView({ channelId }: { channelId: string }) {
       if (confirmTimer.current) clearTimeout(confirmTimer.current);
     };
   }, [load]);
+
+  const knownBuyers = useMemo(() => {
+    const names = new Set<string>();
+    for (const link of links ?? []) {
+      if (link.buyer) names.add(link.buyer);
+    }
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }, [links]);
 
   const handleRevokeClick = async (id: string) => {
     if (confirmingId !== id) {
@@ -146,11 +164,18 @@ export function LinksView({ channelId }: { channelId: string }) {
         <h1 id="links-heading" className={styles.pageTitle}>
           Links
         </h1>
-        <button type="button" className={ui.btnPrimary} onClick={() => setIsModalOpen(true)}>
-          <Plus size={15} weight="bold" />
-          Create link
-        </button>
+        <div className={styles.headActions}>
+          <ExportButton channelId={channelId} type="links" />
+          {isViewer ? null : (
+            <button type="button" className={ui.btnPrimary} onClick={() => setIsModalOpen(true)}>
+              <Plus size={15} weight="bold" />
+              Create link
+            </button>
+          )}
+        </div>
       </header>
+
+      <ExportLimitNote />
 
       {upgradeMessage ? <UpgradeNotice message={upgradeMessage} workspaceId={workspace?.id} /> : null}
 
@@ -178,6 +203,7 @@ export function LinksView({ channelId }: { channelId: string }) {
             <div className={table.headRow}>
               <span>label</span>
               <span>url</span>
+              <span>buyer</span>
               <span className={table.alignRight}>clicks</span>
               <span className={table.alignRight}>joins</span>
               <span className={table.alignRight}>leaves</span>
@@ -191,6 +217,7 @@ export function LinksView({ channelId }: { channelId: string }) {
               <LinkRow
                 key={link.id}
                 link={link}
+                canMutate={!isViewer}
                 isConfirming={confirmingId === link.id}
                 isRevoking={revokingId === link.id}
                 onRevokeClick={(id) => void handleRevokeClick(id)}
@@ -203,6 +230,7 @@ export function LinksView({ channelId }: { channelId: string }) {
 
       <CreateLinkModal
         channelId={channelId}
+        buyers={knownBuyers}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreated={handleCreated}

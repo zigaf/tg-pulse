@@ -1,0 +1,42 @@
+/* Buyer comparison: one row per media buyer, unassigned traffic pinned at the bottom. */
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin: 1.8rem 0 0.7rem;
+}
+
+.sectionTitle {
+  font-size: 0.98rem;
+}
+
+.sectionHint {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.buyerCell {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.buyerName {
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unassigned {
+  color: var(--color-text-muted);
+}
+
+.rowUnassigned {
+  border-style: dashed;
+  border-color: var(--color-border);
+  background: transparent;
+}

@@ -3,6 +3,9 @@ import type { Channel } from '@tgpulse/db';
 import { config } from './config';
 import type { Dict, Lang } from './i18n';
 
+/** Destination of a tracking link: a unique invite, or a post inside the channel. */
+export type LinkMode = 'invite' | 'post';
+
 /** Central callback-data map. Every callback the bot handles is built from here. */
 export const CB = {
   goNewlink: 'go:newlink',
@@ -13,6 +16,9 @@ export const CB = {
   langSet: (lang: Lang) => `lang:set:${lang}`,
   nlPick: (channelId: string) => `nl:pick:${channelId}`,
   nlCancel: 'nl:cancel',
+  nlMode: (mode: LinkMode) => `nl:mode:${mode}`,
+  nlSkipBuyer: 'nl:buyer:skip',
+  blPick: (channelId: string) => `bl:pick:${channelId}`,
   chList: (page: number) => `ch:list:${page}`,
   chOpen: (channelId: string) => `ch:open:${channelId}`,
   chStats: (channelId: string) => `ch:stats:${channelId}`,
@@ -107,10 +113,33 @@ export function cancelMenu(dict: Dict): InlineKeyboard {
   return new InlineKeyboard().text(dict.buttons.cancel, CB.nlCancel);
 }
 
-export function channelPickerMenu(dict: Dict, channels: Channel[]): InlineKeyboard {
+/** An optional dialog step: skipping is a first-class answer, not an abandoned flow. */
+export function skipMenu(dict: Dict): InlineKeyboard {
+  return new InlineKeyboard().text(dict.buttons.skip, CB.nlSkipBuyer).text(dict.buttons.cancel, CB.nlCancel);
+}
+
+/** Invite link stays the default: it is the only mode with exact attribution. */
+export function linkModeMenu(dict: Dict): InlineKeyboard {
+  return new InlineKeyboard()
+    .text(dict.buttons.modeInvite, CB.nlMode('invite'))
+    .row()
+    .text(dict.buttons.modeLandingPost, CB.nlMode('post'))
+    .row()
+    .text(dict.buttons.cancel, CB.nlCancel);
+}
+
+/**
+ * Shared by /newlink and /bulklinks: the callback prefix decides which flow the
+ * picked channel continues into.
+ */
+export function channelPickerMenu(
+  dict: Dict,
+  channels: Channel[],
+  toCallback: (channelId: string) => string = CB.nlPick,
+): InlineKeyboard {
   const keyboard = new InlineKeyboard();
   for (const channel of channels) {
-    keyboard.text(channel.title, CB.nlPick(channel.id)).row();
+    keyboard.text(channel.title, toCallback(channel.id)).row();
   }
   return keyboard.text(dict.buttons.cancel, CB.nlCancel);
 }

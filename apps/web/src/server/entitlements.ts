@@ -46,6 +46,17 @@ export const PLANS = {
   },
 } as const satisfies Record<Plan, PlanDefinition>;
 
+/**
+ * CSV export row cap (docs/PHASE7-BUILD.md §3): FREE gets a sample, paid plans are unlimited.
+ * Deliberately outside `QUOTA_KINDS` — those keys are the canonical contract shared with the
+ * bot and the billing UI, while this cap is a web-only export detail.
+ */
+export const FREE_EXPORT_ROW_LIMIT = 100;
+
+export function exportRowLimit(plan: Plan): Limit {
+  return plan === Plan.FREE ? FREE_EXPORT_ROW_LIMIT : UNLIMITED;
+}
+
 const PLAN_LABELS: Record<Plan, string> = {
   FREE: 'Free',
   PRO: 'Pro',

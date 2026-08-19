@@ -11,6 +11,13 @@
   font-size: 1.35rem;
 }
 
+.headActions {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 /* ---------- search ---------- */
 
 .search {
@@ -104,4 +111,15 @@
   color: var(--color-negative);
   text-align: center;
   margin-top: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .headActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .search {
+    width: 100%;
+  }
 }

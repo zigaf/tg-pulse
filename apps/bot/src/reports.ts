@@ -4,7 +4,7 @@ import { getPrisma, BotStatus, EventType, type Channel } from '@tgpulse/db';
 import { bot } from './bot';
 import type { BotContext } from './context';
 import { DEFAULT_LANG, getDict, langFromCode, type Lang } from './i18n';
-import { getUserActiveChannels, resolveLinkLabels } from './queries';
+import { getUserActiveChannels, resolveLinkRefs } from './queries';
 import { dailyReportCard, type ChannelReport, type ReportSource } from './views/report-view';
 
 const prisma = getPrisma();
@@ -37,14 +37,18 @@ async function groupBySource(
   });
 
   const sorted = [...grouped].sort((a, b) => b._count._all - a._count._all);
-  const labels = await resolveLinkLabels(
+  const refs = await resolveLinkRefs(
     sorted.map((r) => r.linkId).filter((id): id is string => id !== null),
   );
-  return sorted.map((row) => ({
-    linkId: row.linkId,
-    label: row.linkId ? (labels.get(row.linkId) ?? null) : null,
-    count: row._count._all,
-  }));
+  return sorted.map((row) => {
+    const ref = row.linkId ? refs.get(row.linkId) : undefined;
+    return {
+      linkId: row.linkId,
+      label: ref?.label ?? null,
+      buyer: ref?.buyer ?? null,
+      count: row._count._all,
+    };
+  });
 }
 
 async function buildChannelReport(channel: Channel, start: Date, end: Date): Promise<ChannelReport> {

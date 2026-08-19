@@ -4,6 +4,7 @@ import { MagnifyingGlass, Star, UsersThree } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { getSubscribers, type SubscriberRow } from '@/lib/api';
 import { formatFullDate } from '@/lib/format';
+import { ExportButton, ExportLimitNote } from '../shared/ExportButton';
 import { EmptyState, ErrorState, SkeletonRows } from '../shared/States';
 import table from '../shared/table.module.css';
 import ui from '../shared/ui.module.css';
@@ -101,18 +102,23 @@ export function SubscribersView({ channelId }: { channelId: string }) {
         <h1 id="subscribers-heading" className={styles.pageTitle}>
           Subscribers
         </h1>
-        <div className={styles.search}>
-          <MagnifyingGlass size={15} className={styles.searchIcon} aria-hidden="true" />
-          <input
-            type="search"
-            className={styles.searchInput}
-            placeholder="Search by name or username"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            aria-label="Search subscribers"
-          />
+        <div className={styles.headActions}>
+          <div className={styles.search}>
+            <MagnifyingGlass size={15} className={styles.searchIcon} aria-hidden="true" />
+            <input
+              type="search"
+              className={styles.searchInput}
+              placeholder="Search by name or username"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              aria-label="Search subscribers"
+            />
+          </div>
+          <ExportButton channelId={channelId} type="subscribers" />
         </div>
       </header>
+
+      <ExportLimitNote />
 
       {error && items === null ? (
         <div className={ui.card}>

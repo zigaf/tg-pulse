@@ -147,6 +147,13 @@
   color: var(--color-accent-bright);
 }
 
+/* Hairline between channel sections and workspace-level links. */
+.navDivider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0.5rem 0.4rem;
+}
+
 /* ---------- locked nav item ---------- */
 
 .navItemLocked {
@@ -259,6 +266,13 @@
   .navItem {
     padding: 0.45rem 0.65rem;
     white-space: nowrap;
+  }
+
+  .navDivider {
+    width: 1px;
+    height: auto;
+    margin: 0.35rem 0.3rem;
+    flex: none;
   }
 
   .navLock {

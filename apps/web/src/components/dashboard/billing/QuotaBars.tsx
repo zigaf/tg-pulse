@@ -9,21 +9,25 @@ interface Quota {
   key: string;
   label: string;
   used: number;
-  limit: number | null;
+  limit: number | null | undefined;
   /** Shown when the quota is exhausted. */
   fullNote: string;
 }
 
-function QuotaRow({ quota }: { quota: Quota }) {
-  const limit = toQuota(quota.limit);
-  const isFull = isQuotaFull(quota.used, limit);
-  const ratio = quotaRatio(quota.used, limit);
+/**
+ * One usage rail. Exported so other sections (Team) show the exact same quota
+ * treatment instead of inventing a second progress style.
+ */
+export function QuotaMeter({ label, used, limit: rawLimit, fullNote }: Omit<Quota, 'key'>) {
+  const limit = toQuota(rawLimit);
+  const isFull = isQuotaFull(used, limit);
+  const ratio = quotaRatio(used, limit);
 
   return (
     <li className={styles.quotaRow}>
-      <span className={styles.quotaLabel}>{quota.label}</span>
+      <span className={styles.quotaLabel}>{label}</span>
       <span className={`${styles.quotaValue} ${isFull ? styles.quotaValueFull : ''}`}>
-        {formatNumber(quota.used)} / {formatQuota(limit)}
+        {formatNumber(used)} / {formatQuota(limit)}
       </span>
       {limit === null ? (
         <span className={styles.quotaUnlimited}>No cap on your plan.</span>
@@ -31,10 +35,10 @@ function QuotaRow({ quota }: { quota: Quota }) {
         <span
           className={styles.quotaBar}
           role="progressbar"
-          aria-label={quota.label}
+          aria-label={label}
           aria-valuemin={0}
           aria-valuemax={limit}
-          aria-valuenow={quota.used}
+          aria-valuenow={used}
         >
           <span
             className={`${styles.quotaFill} ${isFull ? styles.quotaFillFull : ''}`}
@@ -42,7 +46,7 @@ function QuotaRow({ quota }: { quota: Quota }) {
           />
         </span>
       )}
-      {isFull ? <span className={styles.quotaNote}>{quota.fullNote}</span> : null}
+      {isFull ? <span className={styles.quotaNote}>{fullNote}</span> : null}
     </li>
   );
 }
@@ -69,7 +73,13 @@ export function QuotaBars({ usage, limits }: { usage: BillingUsage; limits: Plan
   return (
     <ul className={styles.quotaList}>
       {quotas.map((quota) => (
-        <QuotaRow key={quota.key} quota={quota} />
+        <QuotaMeter
+          key={quota.key}
+          label={quota.label}
+          used={quota.used}
+          limit={quota.limit}
+          fullNote={quota.fullNote}
+        />
       ))}
     </ul>
   );

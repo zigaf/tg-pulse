@@ -3,7 +3,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;
   margin-bottom: 1.3rem;
+}
+
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .pageTitle {
@@ -195,6 +203,11 @@
 @media (max-width: 860px) {
   .tiles {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .headActions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .tileValue {

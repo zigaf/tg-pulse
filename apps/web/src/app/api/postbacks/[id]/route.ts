@@ -5,6 +5,7 @@ import { getSessionUserId } from '@/server/auth';
 import { assertChannelFeature } from '@/server/entitlements';
 import { ApiError, handleRouteError, jsonError, jsonOk, parseOrThrow, readJsonBody } from '@/server/http';
 import { assertPostbackAccess, assertValidUrlTemplate, toPostbackDto } from '@/server/postbacks';
+import { assertCanMutateChannel } from '@/server/roles';
 
 export const runtime = 'nodejs';
 
@@ -23,6 +24,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     const { id } = await ctx.params;
     const postback = await assertPostbackAccess(userId, id);
+    await assertCanMutateChannel(userId, postback.channelId);
     await assertChannelFeature(postback.channelId, 'postbacks');
 
     const body = parseOrThrow(updatePostbackSchema, await readJsonBody(req));
@@ -63,6 +65,7 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
 
     const { id } = await ctx.params;
     const postback = await assertPostbackAccess(userId, id);
+    await assertCanMutateChannel(userId, postback.channelId);
     await assertChannelFeature(postback.channelId, 'postbacks');
 
     await getPrisma().postback.delete({ where: { id: postback.id } });

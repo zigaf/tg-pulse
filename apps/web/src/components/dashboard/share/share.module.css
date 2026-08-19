@@ -1,0 +1,210 @@
+/* Shared client reports: create modal and the list of live links. */
+
+.overlay {
+  composes: overlay from '../links/links.module.css';
+}
+
+.modal {
+  composes: modal from '../links/links.module.css';
+}
+
+.modalHead {
+  composes: modalHead from '../links/links.module.css';
+}
+
+.modalTitle {
+  composes: modalTitle from '../links/links.module.css';
+}
+
+.modalClose {
+  composes: modalClose from '../links/links.module.css';
+}
+
+.form {
+  composes: form from '../links/links.module.css';
+}
+
+.modalFoot {
+  composes: modalFoot from '../links/links.module.css';
+}
+
+.formError {
+  composes: formError from '../links/links.module.css';
+}
+
+.choiceRow {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.choice {
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  background: oklch(15% 0.015 290 / 0.8);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+
+.choice:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.choice:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 1px;
+}
+
+.choiceActive {
+  color: var(--color-text);
+  border-color: var(--color-border-accent);
+  background: oklch(62% 0.21 288 / 0.18);
+}
+
+.linkResult {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.linkBox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: oklch(12% 0.015 290 / 0.9);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.75rem;
+}
+
+.linkCode {
+  flex: 1;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  word-break: break-all;
+  min-width: 0;
+}
+
+.linkNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.linkNoteIcon {
+  flex: none;
+  margin-top: 0.15rem;
+  color: var(--color-accent-bright);
+}
+
+/* ---------- list ---------- */
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin: 1.8rem 0 0.7rem;
+}
+
+.sectionTitle {
+  font-size: 0.98rem;
+}
+
+.sectionHint {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.labelCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.window {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.actionsCell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.rowBtn {
+  font: inherit;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+
+.rowBtn:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: var(--color-border-accent);
+  background: oklch(62% 0.21 288 / 0.1);
+}
+
+.rowBtn:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 1px;
+}
+
+.rowBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dangerBtn {
+  composes: rowBtn;
+}
+
+.dangerBtn:hover:not(:disabled) {
+  color: var(--color-negative);
+  border-color: oklch(65% 0.19 25 / 0.4);
+  background: oklch(65% 0.19 25 / 0.1);
+}
+
+.dangerConfirm {
+  color: var(--color-negative);
+  border-color: oklch(65% 0.19 25 / 0.55);
+  background: oklch(65% 0.19 25 / 0.1);
+}
+
+.rowDead {
+  opacity: 0.55;
+}
+
+.actionError {
+  font-size: 0.78rem;
+  color: var(--color-negative);
+  margin-top: 0.6rem;
+}

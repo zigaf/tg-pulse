@@ -7,6 +7,7 @@ import { getSessionUserId } from '@/server/auth';
 import { assertQuota, countChannelLinks } from '@/server/entitlements';
 import { handleRouteError, jsonError, jsonOk, parseOrThrow, readJsonBody } from '@/server/http';
 import { toLinkDto } from '@/server/links';
+import { assertCanMutateChannel } from '@/server/roles';
 import { createChatInviteLink } from '@/server/telegram';
 
 export const runtime = 'nodejs';
@@ -23,6 +24,8 @@ const optionalTag = z
 const createLinkSchema = z.object({
   label: z.string().trim().min(1).max(64),
   creative: optionalTag,
+  /** Media buyer owning the placement; drives the buyer comparison report. */
+  buyer: optionalTag,
   utmSource: optionalTag,
   utmMedium: optionalTag,
   utmCampaign: optionalTag,
@@ -92,7 +95,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     if (!userId) return jsonError(401, 'Unauthorized');
 
     const { id: channelId } = await ctx.params;
-    const channel = await assertChannelAccess(userId, channelId);
+    // Creating a link is a mutation: viewers get 403 before anything is spent.
+    const channel = await assertCanMutateChannel(userId, channelId);
     const body = parseOrThrow(createLinkSchema, await readJsonBody(req));
 
     // Plan quota is checked before the Telegram call so a rejected create leaves no orphan invite.
@@ -107,6 +111,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         channelId: channel.id,
         label: body.label,
         creative: body.creative ?? null,
+        buyer: body.buyer ?? null,
         utmSource: body.utmSource ?? null,
         utmMedium: body.utmMedium ?? null,
         utmCampaign: body.utmCampaign ?? null,

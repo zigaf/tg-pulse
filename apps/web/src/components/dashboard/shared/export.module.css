@@ -1,0 +1,74 @@
+/* CSV export control: the button plus the two things that can follow it,
+   an inline failure and the free-plan row cap. */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.error {
+  font-size: 0.72rem;
+  color: var(--color-negative);
+  text-align: right;
+  max-width: 30ch;
+}
+
+.truncated {
+  font-size: 0.72rem;
+  color: var(--color-warning);
+  text-align: right;
+  max-width: 34ch;
+}
+
+.note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  background: oklch(19% 0.02 290 / 0.45);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.noteIcon {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.noteLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-accent-bright);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--duration-fast) ease;
+  white-space: nowrap;
+}
+
+.noteLink:hover {
+  border-bottom-color: var(--color-accent-bright);
+}
+
+.noteLink:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    align-items: stretch;
+  }
+
+  .error,
+  .truncated {
+    text-align: left;
+  }
+}

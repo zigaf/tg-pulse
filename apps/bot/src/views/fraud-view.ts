@@ -17,23 +17,38 @@ const VERDICT_BADGE: Record<FraudVerdict, string> = {
   likely_fraud: '🔴',
 };
 
+/** Marks a landing-post link in the list; the card footer explains what it means. */
+const LANDING_POST_MARK = '↗';
+
 export function fraudPickChannelCard(dict: Dict): string {
   return card({ icon: ICON_FRAUD, title: dict.fraud.title, footer: dict.fraud.pickChannel });
 }
 
-export function fraudLinksCard(dict: Dict, channelTitle: string, hasLinks: boolean): string {
+/**
+ * The list is where the reader compares links, so the legend replaces the generic
+ * footer as soon as one of them attributes by time window instead of by invite.
+ */
+export function fraudLinksCard(dict: Dict, channelTitle: string, reports: FraudReport[]): string {
+  const hasLinks = reports.length > 0;
+  const footer = !hasLinks
+    ? dict.fraud.noLinksFooter
+    : reports.some((report) => report.isLandingPost)
+      ? dict.links.landingPostLegend(LANDING_POST_MARK)
+      : dict.fraud.linksFooter;
+
   return card({
     icon: ICON_FRAUD,
     title: dict.fraud.title,
     crumbs: [escapeHtml(channelTitle)],
     body: hasLinks ? undefined : [dict.fraud.noLinks],
-    footer: hasLinks ? dict.fraud.linksFooter : dict.fraud.noLinksFooter,
+    footer,
   });
 }
 
 export function fraudLinkButton(dict: Dict, report: FraudReport): string {
   const score = report.verdict === 'not_enough_data' ? '?' : String(report.score);
-  return `${VERDICT_BADGE[report.verdict]} ${truncate(report.label, BUTTON_LABEL_MAX)} · ${score}`;
+  const mark = report.isLandingPost ? ` ${LANDING_POST_MARK}` : '';
+  return `${VERDICT_BADGE[report.verdict]} ${truncate(report.label, BUTTON_LABEL_MAX)}${mark} · ${score}`;
 }
 
 /** The recommendation sentence, backed by the two loudest signals. */
@@ -72,6 +87,10 @@ export function fraudReportCard(dict: Dict, report: FraudReport, channelTitle: s
   if (report.unmeasured.length > 0) {
     const names = report.unmeasured.map((key) => dict.fraud.signal[key]).join(', ');
     body.push('', dict.fraud.notMeasured(names));
+  }
+  // Said out loud here: every number above rests on weaker attribution.
+  if (report.isLandingPost) {
+    body.push('', `${dict.links.mode}: ${dict.links.modeLandingPost}`, dict.links.landingPostWarning);
   }
 
   return card({

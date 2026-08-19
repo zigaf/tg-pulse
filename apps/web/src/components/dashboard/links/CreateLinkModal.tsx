@@ -9,6 +9,8 @@ import styles from './links.module.css';
 
 interface CreateLinkModalProps {
   channelId: string;
+  /** Buyer names already used on this channel; offered as autocomplete so tags stay consistent. */
+  buyers?: string[];
   isOpen: boolean;
   onClose: () => void;
   onCreated: (link: TrackedLink) => void;
@@ -16,11 +18,19 @@ interface CreateLinkModalProps {
   onUpgradeRequired: (message: string) => void;
 }
 
-const EMPTY_FORM: CreateLinkInput = { label: '', creative: '', utmSource: '', utmMedium: '', utmCampaign: '' };
+const EMPTY_FORM: CreateLinkInput = {
+  label: '',
+  creative: '',
+  buyer: '',
+  utmSource: '',
+  utmMedium: '',
+  utmCampaign: '',
+};
 
 function cleanInput(form: CreateLinkInput): CreateLinkInput {
   const input: CreateLinkInput = { label: form.label.trim() };
   if (form.creative?.trim()) input.creative = form.creative.trim();
+  if (form.buyer?.trim()) input.buyer = form.buyer.trim();
   if (form.utmSource?.trim()) input.utmSource = form.utmSource.trim();
   if (form.utmMedium?.trim()) input.utmMedium = form.utmMedium.trim();
   if (form.utmCampaign?.trim()) input.utmCampaign = form.utmCampaign.trim();
@@ -28,7 +38,14 @@ function cleanInput(form: CreateLinkInput): CreateLinkInput {
 }
 
 /** Modal form: label (required), creative, collapsed UTM parameters. */
-export function CreateLinkModal({ channelId, isOpen, onClose, onCreated, onUpgradeRequired }: CreateLinkModalProps) {
+export function CreateLinkModal({
+  channelId,
+  buyers = [],
+  isOpen,
+  onClose,
+  onCreated,
+  onUpgradeRequired,
+}: CreateLinkModalProps) {
   const [form, setForm] = useState<CreateLinkInput>(EMPTY_FORM);
   const [isUtmOpen, setIsUtmOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -133,6 +150,27 @@ export function CreateLinkModal({ channelId, isOpen, onClose, onCreated, onUpgra
                   onChange={(event) => setField('creative')(event.target.value)}
                   placeholder="Optional: which ad or post this link runs in"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="link-buyer" className={ui.label}>
+                  Media buyer
+                </label>
+                <input
+                  id="link-buyer"
+                  className={ui.input}
+                  value={form.buyer ?? ''}
+                  onChange={(event) => setField('buyer')(event.target.value)}
+                  placeholder="Optional: who runs this placement"
+                  list="link-buyer-options"
+                />
+                {buyers.length > 0 ? (
+                  <datalist id="link-buyer-options">
+                    {buyers.map((buyer) => (
+                      <option key={buyer} value={buyer} />
+                    ))}
+                  </datalist>
+                ) : null}
               </div>
 
               <button

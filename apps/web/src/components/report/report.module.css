@@ -1,0 +1,240 @@
+/* Public client report: no navigation, no account, one page of numbers.
+   Same dark violet system as the dashboard so a shared link still reads as TGPulse. */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: oklch(11% 0.012 290 / 0.85);
+  backdrop-filter: blur(18px);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.wordmark svg {
+  color: var(--color-accent-bright);
+}
+
+.barNote {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.barCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.76rem;
+  color: var(--color-accent-bright);
+  border: 1px solid var(--color-border-accent);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  transition:
+    background var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
+}
+
+.barCta:hover {
+  background: oklch(62% 0.21 288 / 0.15);
+}
+
+.barCta:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 2px;
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.3rem;
+  margin-bottom: 1.4rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent-bright);
+}
+
+.title {
+  font-size: clamp(1.6rem, 1.2rem + 1.8vw, 2.4rem);
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+
+.handle {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.window {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  white-space: nowrap;
+}
+
+.chartCard {
+  padding: 1.1rem 1rem 0.7rem;
+  margin-bottom: 1.8rem;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+}
+
+.sectionTitle {
+  font-size: 0.98rem;
+}
+
+.sectionHint {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 2.6rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.footLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--color-accent-bright);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--duration-fast) ease;
+}
+
+.footLink:hover {
+  border-bottom-color: var(--color-accent-bright);
+}
+
+.footLink:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------- unavailable state ---------- */
+
+.gone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.7rem;
+  padding: 4rem 1.5rem;
+}
+
+.goneIcon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  color: var(--color-text-muted);
+  background: oklch(24% 0.025 290 / 0.7);
+  border: 1px solid var(--color-border);
+}
+
+.goneTitle {
+  font-size: 1.25rem;
+}
+
+.goneBody {
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  max-width: 44ch;
+}
+
+/* ---------- source cells ---------- */
+
+.sourceText {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .bar {
+    padding: 0.6rem 1rem;
+  }
+
+  .barNote {
+    display: none;
+  }
+
+  .main {
+    padding: 1.4rem 1rem 3rem;
+  }
+
+  .foot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

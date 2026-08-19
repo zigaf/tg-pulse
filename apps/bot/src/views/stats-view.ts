@@ -1,6 +1,6 @@
 import { escapeHtml, percent, signed } from '../format';
 import type { Dict } from '../i18n';
-import { sourceName } from '../sources';
+import { buyerTag, sourceName } from '../sources';
 import { STATS_WINDOW_DAYS, type ChannelStats } from '../stats';
 import { bar, card, kv, sparkline, trend } from '../ui';
 
@@ -30,9 +30,8 @@ function detailLines(dict: Dict, stats: ChannelStats): string[] {
   lines.push('', `<b>${dict.stats.topSources}</b>`);
   for (const source of stats.topSources) {
     const share = stats.sourceJoins > 0 ? percent(source.joins / stats.sourceJoins) : percent(0);
-    lines.push(
-      `<code>${bar(source.joins, top, BAR_WIDTH)}</code> ${share} · ${sourceName(dict, source)} (${source.joins})`,
-    );
+    const name = `${sourceName(dict, source)}${buyerTag(dict, source.buyer)}`;
+    lines.push(`<code>${bar(source.joins, top, BAR_WIDTH)}</code> ${share} · ${name} (${source.joins})`);
   }
   return lines;
 }
