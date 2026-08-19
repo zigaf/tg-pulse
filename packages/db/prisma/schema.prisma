@@ -168,6 +168,10 @@ model Postback {
   onJoin      Boolean  @default(true) @map("on_join")
   onLeave     Boolean  @default(false) @map("on_leave")
   isActive    Boolean  @default(true) @map("is_active")
+  /** Last delivery outcome, so failures are visible without digging through logs. */
+  lastStatus  Int?      @map("last_status") // HTTP status, null when the request never completed
+  lastError   String?   @map("last_error")
+  lastFiredAt DateTime? @map("last_fired_at")
   createdAt   DateTime @default(now()) @map("created_at")
   channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
 

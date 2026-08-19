@@ -23,13 +23,14 @@ function unsubRate(joins: number, leaves: number): number {
   return Math.round((leaves / joins) * 100 * 100) / 100;
 }
 
-function toChannelDto(channel: Channel) {
+/** Same shape as /api/me channels so both feed the ApiChannel type. */
+function toChannelDto(channel: Channel, trackedSubscribers: number) {
   return {
     id: channel.id,
-    tgChatId: channel.tgChatId.toString(),
     title: channel.title,
     username: channel.username,
     botStatus: channel.botStatus,
+    subscriberCount: channel.memberCount ?? trackedSubscribers,
   };
 }
 
@@ -121,8 +122,12 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       },
     ].sort((a, b) => b.joins - a.joins || b.clicks - a.clicks);
 
+    const trackedSubscribers = await getPrisma().subscriber.count({
+      where: { channelId: channel.id, leftAt: null },
+    });
+
     return jsonOk({
-      channel: toChannelDto(channel),
+      channel: toChannelDto(channel, trackedSubscribers),
       totals: {
         joins: totals.joins,
         leaves: totals.leaves,

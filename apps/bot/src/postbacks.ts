@@ -46,27 +46,42 @@ async function findAttributionClick(linkId: string) {
   });
 }
 
-async function sendPostback(name: string, url: string, allowRetry: boolean): Promise<void> {
+/** Delivery outcome is persisted so the dashboard can show it without log digging. */
+async function recordDelivery(id: string, status: number | null, error: string | null): Promise<void> {
+  await prisma.postback
+    .update({ where: { id }, data: { lastStatus: status, lastError: error, lastFiredAt: new Date() } })
+    .catch(() => {
+      // postback may have been deleted mid-flight; nothing to record
+    });
+}
+
+async function sendPostback(
+  postback: { id: string; name: string },
+  url: string,
+  allowRetry: boolean,
+): Promise<void> {
   try {
     // SSRF guard: user-supplied URL, re-validated on every redirect hop
     const res = await safeFetch(url, FETCH_TIMEOUT_MS);
-    console.log(`[postback] ${name} ${res.status} ${url}`);
+    const failed = res.status >= 400;
+    await recordDelivery(postback.id, res.status, failed ? `HTTP ${res.status}` : null);
+    if (failed) console.error(`[postback] ${postback.name} ${res.status}`);
     if (res.status >= 500 && allowRetry) {
-      scheduleRetry(name, url);
+      scheduleRetry(postback, url);
     }
   } catch (e) {
     const reason = e instanceof Error ? e.message : String(e);
-    console.error(`[postback] ${name} FAIL (${reason}) ${url}`);
+    await recordDelivery(postback.id, null, reason.slice(0, 300));
+    console.error(`[postback] ${postback.name} FAIL (${reason})`);
     if (allowRetry) {
-      scheduleRetry(name, url);
+      scheduleRetry(postback, url);
     }
   }
 }
 
-function scheduleRetry(name: string, url: string): void {
-  console.error(`[postback] ${name} retry in ${RETRY_DELAY_MS / 1000}s`);
+function scheduleRetry(postback: { id: string; name: string }, url: string): void {
   const timer = setTimeout(() => {
-    void sendPostback(name, url, false);
+    void sendPostback(postback, url, false);
   }, RETRY_DELAY_MS);
   // Fire-and-forget: an in-flight retry must not keep the process alive
   timer.unref();
@@ -111,9 +126,9 @@ export async function firePostbacks(
 
     for (const postback of postbacks) {
       const url = renderTemplate(postback.urlTemplate, values);
-      void sendPostback(postback.name, url, true);
+      void sendPostback(postback, url, true);
     }
   } catch (e) {
-    console.log(`[postback] dispatch failed: ${e instanceof Error ? e.message : String(e)}`);
+    console.error(`[postback] dispatch failed: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
