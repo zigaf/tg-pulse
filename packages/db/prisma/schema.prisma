@@ -26,10 +26,13 @@ model User {
 model Workspace {
   id        String       @id @default(cuid())
   name      String
+  /** Effective plan; kept in sync with the active subscription. */
   plan      Plan         @default(FREE)
   createdAt DateTime     @default(now()) @map("created_at")
   members   Membership[]
   channels  Channel[]
+  subscriptions Subscription[]
+  payments      PaymentEvent[]
 
   @@map("workspaces")
 }
@@ -38,6 +41,57 @@ enum Plan {
   FREE
   PRO
   AGENCY
+}
+
+/** Current paid access of a workspace. One active row per workspace. */
+model Subscription {
+  id             String             @id @default(cuid())
+  workspaceId    String             @map("workspace_id")
+  plan           Plan
+  status         SubscriptionStatus @default(ACTIVE)
+  provider       PaymentProvider
+  /** Telegram charge id of the recurring subscription, when the provider supports it. */
+  providerRef    String?            @map("provider_ref")
+  /** Access is granted while now() < currentPeriodEnd. */
+  currentPeriodEnd DateTime         @map("current_period_end")
+  cancelAtPeriodEnd Boolean         @default(false) @map("cancel_at_period_end")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  workspace      Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED // still valid until currentPeriodEnd
+  EXPIRED
+}
+
+enum PaymentProvider {
+  TELEGRAM_STARS
+  LEMON_SQUEEZY
+}
+
+/** Immutable ledger of successful payments; provider id keeps it idempotent. */
+model PaymentEvent {
+  id                String          @id @default(cuid())
+  workspaceId       String          @map("workspace_id")
+  provider          PaymentProvider
+  providerPaymentId String          @unique @map("provider_payment_id")
+  plan              Plan
+  /** Minor units for fiat, whole Stars for XTR. */
+  amount            Int
+  currency          String
+  periodDays        Int             @map("period_days")
+  payerTgId         BigInt?         @map("payer_tg_id")
+  payload           Json?
+  createdAt         DateTime        @default(now()) @map("created_at")
+  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@map("payment_events")
 }
 
 model Membership {
