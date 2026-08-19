@@ -145,11 +145,46 @@ export const AD_PROVIDERS: Record<AdProvider, AdProviderDescriptor> = {
     name: 'TikTok',
     product: 'Events API 2.0',
     clickId: 'ttclid',
-    summary: 'Same shape as Meta, queued behind the platforms our users actually buy on today.',
-    comingSoon: true,
-    credentialFields: [],
-    configFields: [],
-    setupSteps: [],
+    summary: 'Uploads joins against the TikTok click id so the pixel optimizes for subscribers.',
+    comingSoon: false,
+    // Field names are parsed by apps/bot/src/integrations/tiktok.ts; keep both sides in step.
+    credentialFields: [
+      {
+        name: 'accessToken',
+        label: 'Access token',
+        placeholder: 'from Events Manager',
+        hint: 'Pixel-scoped token generated in TikTok Events Manager.',
+        secret: true,
+      },
+    ],
+    configFields: [
+      {
+        name: 'pixelCode',
+        label: 'Pixel code',
+        placeholder: 'CQ1A2B3C4D5E6F7G',
+        hint: 'The pixel id shown next to your pixel in Events Manager.',
+      },
+      {
+        name: 'eventName',
+        label: 'Event name',
+        placeholder: 'CompleteRegistration',
+        hint: 'The standard event your campaigns optimize on. Defaults to CompleteRegistration.',
+        optional: true,
+      },
+      {
+        name: 'testEventCode',
+        label: 'Test event code',
+        placeholder: 'TEST12345',
+        hint: 'Optional. With it set, test events land in the Test Events tab instead of live data.',
+        optional: true,
+      },
+    ],
+    setupSteps: [
+      'Open TikTok Events Manager and pick the pixel your campaigns use.',
+      'Generate an access token for that pixel and paste it above.',
+      'Copy the pixel code from the same screen.',
+      'Run Test: we send one probe event that is not your conversion event.',
+    ],
   },
 };
 

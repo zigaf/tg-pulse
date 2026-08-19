@@ -55,17 +55,33 @@ const yandexCredentialsSchema = z.object({
   oauthToken: secretToken('OAuth token'),
 });
 
+const tiktokCredentialsSchema = z.object({
+  accessToken: secretToken('Access token'),
+});
+
+/** Field names must match apps/bot/src/integrations/tiktok.ts: the validators are separate. */
+const tiktokConfigSchema = z.object({
+  pixelCode: z.string().trim().min(6, 'Pixel code looks too short').max(64),
+  eventName: z.string().trim().min(1).max(64).default('CompleteRegistration'),
+  testEventCode: z.string().trim().max(64).default(''),
+});
+
 const yandexConfigSchema = z.object({
   counterId: numericId('Counter id', 15),
   goalName: z.string().trim().min(1).max(128),
 });
 
 export type MetaConfig = z.infer<typeof metaConfigSchema>;
+export type TikTokConfig = z.infer<typeof tiktokConfigSchema>;
 export type YandexConfig = z.infer<typeof yandexConfigSchema>;
 
 /** Typed reads of a stored `config` column, used by the platform test calls. */
 export function parseMetaConfig(input: unknown): MetaConfig {
   return parseOrThrow(metaConfigSchema, input);
+}
+
+export function parseTikTokConfig(input: unknown): TikTokConfig {
+  return parseOrThrow(tiktokConfigSchema, input);
 }
 
 export function parseYandexConfig(input: unknown): YandexConfig {
@@ -101,7 +117,13 @@ export const PROVIDER_SPECS: Record<AdProvider, ProviderSpec> = {
     parseConfig: (input) => parseOrThrow(yandexConfigSchema, input),
   },
   GOOGLE_ADS: comingSoonSpec('GOOGLE_ADS'),
-  TIKTOK_EVENTS: comingSoonSpec('TIKTOK_EVENTS'),
+  TIKTOK_EVENTS: {
+    provider: 'TIKTOK_EVENTS',
+    comingSoon: false,
+    secretField: 'accessToken',
+    parseCredentials: (input) => parseOrThrow(tiktokCredentialsSchema, input),
+    parseConfig: (input) => parseOrThrow(tiktokConfigSchema, input),
+  },
 };
 
 export function providerSpec(provider: AdProvider): ProviderSpec {

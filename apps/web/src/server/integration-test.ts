@@ -4,9 +4,11 @@ import { safeFetch } from './net-guard';
 import {
   decryptCredentials,
   parseMetaConfig,
+  parseTikTokConfig,
   parseYandexConfig,
   type MetaConfig,
   type StringMap,
+  type TikTokConfig,
   type YandexConfig,
 } from './integrations';
 
@@ -23,6 +25,7 @@ const TEST_TIMEOUT_MS = 10_000;
 const META_GRAPH_VERSION = 'v21.0';
 const META_GRAPH_ORIGIN = 'https://graph.facebook.com';
 const YANDEX_METRIKA_ORIGIN = 'https://api-metrika.yandex.net';
+const TIKTOK_ORIGIN = 'https://business-api.tiktok.com';
 
 export interface IntegrationTestResult {
   ok: boolean;
@@ -137,6 +140,49 @@ function yandexError(body: string, status: number): string {
   return first || asText(parsed.message) || `Metrica answered HTTP ${status}.`;
 }
 
+/**
+ * TikTok has no lightweight credential probe: the pixel-scoped token carries neither an
+ * advertiser id nor an OAuth app, so every GET would fail for a valid token. Instead we post
+ * one deduplicated ViewContent probe, never the configured conversion event, so a connection
+ * check cannot inflate the metric campaigns optimize on.
+ */
+async function testTikTok(
+  credentials: StringMap,
+  config: TikTokConfig,
+): Promise<IntegrationTestResult> {
+  const body = {
+    event_source: 'web',
+    event_source_id: config.pixelCode,
+    ...(config.testEventCode ? { test_event_code: config.testEventCode } : {}),
+    data: [
+      {
+        event: 'ViewContent',
+        event_time: Math.floor(Date.now() / 1000),
+        event_id: `tgpulse-test-${config.pixelCode}`,
+        user: {},
+      },
+    ],
+  };
+
+  const probe = await safeFetch(`${TIKTOK_ORIGIN}/open_api/v1.3/event/track/`, TEST_TIMEOUT_MS, {
+    method: 'POST',
+    headers: { 'Access-Token': credentials.accessToken, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+    readBody: true,
+  });
+
+  // TikTok answers 200 even when it rejects the payload; the verdict lives in `code`.
+  const payload = parseJson(probe.body);
+  const code = typeof payload.code === 'number' ? payload.code : -1;
+  const message = asText(payload.message) || `HTTP ${probe.status}`;
+
+  if (code !== 0) {
+    return { ok: false, detail: `TikTok rejected the test: ${message}` };
+  }
+  const destination = config.testEventCode ? 'Test Events' : 'live events';
+  return { ok: true, detail: `Pixel ${config.pixelCode} accepted a test event (${destination}).` };
+}
+
 async function testYandex(
   credentials: StringMap,
   config: YandexConfig,
@@ -212,6 +258,10 @@ export async function runIntegrationTest(
     if (provider === 'YANDEX_METRIKA') {
       const config = parseYandexConfig(integration.config);
       return () => testYandex(credentials, config);
+    }
+    if (provider === 'TIKTOK_EVENTS') {
+      const config = parseTikTokConfig(integration.config);
+      return () => testTikTok(credentials, config);
     }
     return null;
   })();
