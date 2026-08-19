@@ -138,6 +138,77 @@ export interface SubscribersPage {
   nextCursor: string | null;
 }
 
+/* ---------- revenue ---------- */
+
+export type RevenueDays = 7 | 30 | 90;
+
+export interface RevenueTotals {
+  revenue: number;
+  purchases: number;
+  leads: number;
+  refunds: number;
+  /** Dominant currency of the period; rows in other currencies are excluded. */
+  currency: string;
+  /** Revenue per distinct paying buyer. */
+  arpu: number;
+  /** Percent of sale events resolved to a tracked link at ingest time. */
+  matchedRate: number;
+}
+
+export interface RevenueSource {
+  /** null = organic (non-attributed) traffic */
+  linkId: string | null;
+  label: string;
+  joins: number;
+  revenue: number;
+  purchases: number;
+  /** Revenue per join. */
+  romiPerJoin: number;
+  /** Percent of joins that produced at least one purchase. */
+  conversionRate: number;
+}
+
+export interface RevenuePoint {
+  date: string;
+  revenue: number;
+}
+
+export interface ApiRevenueReport {
+  totals: RevenueTotals;
+  /** True when the period contained sale events in more than one currency. */
+  mixedCurrencies: boolean;
+  sources: RevenueSource[];
+  series: RevenuePoint[];
+}
+
+export interface ApiApiKey {
+  id: string;
+  channelId: string;
+  /** Visible identifier, e.g. "tgp_4f19a2c8". */
+  prefix: string;
+  createdAt: string;
+  revokedAt: string | null;
+}
+
+/** POST /api-keys response: the only time the raw secret is ever returned. */
+export interface CreatedApiKey extends ApiApiKey {
+  key: string;
+}
+
+export interface SalesImportRowError {
+  /** Physical line number in the uploaded file (header is line 1). */
+  row: number;
+  message: string;
+}
+
+export interface SalesImportResult {
+  accepted: number;
+  /** Rows whose buyer was found among the channel subscribers. */
+  matched: number;
+  /** Server caps this list; it is not the full error count. */
+  errors: SalesImportRowError[];
+}
+
 /** Fields posted by the Telegram Login Widget. */
 export interface TelegramAuthPayload {
   id: number;
@@ -240,6 +311,28 @@ export function getSubscribers(
   if (options.q) search.set('q', options.q);
   const suffix = search.size > 0 ? `?${search.toString()}` : '';
   return request<SubscribersPage>(`/api/channels/${channelId}/subscribers${suffix}`);
+}
+
+export function getRevenue(channelId: string, days: RevenueDays): Promise<ApiResult<ApiRevenueReport>> {
+  return request<ApiRevenueReport>(`/api/channels/${channelId}/revenue?days=${days}`);
+}
+
+export function getApiKeys(channelId: string): Promise<ApiResult<ApiApiKey[]>> {
+  return request<ApiApiKey[]>(`/api/channels/${channelId}/api-keys`);
+}
+
+/** The raw key in the response is shown once and never retrievable again. */
+export function createApiKey(channelId: string): Promise<ApiResult<CreatedApiKey>> {
+  return post<CreatedApiKey>(`/api/channels/${channelId}/api-keys`);
+}
+
+/** Idempotent: revoking an already revoked key succeeds and changes nothing. */
+export function revokeApiKey(id: string): Promise<ApiResult<ApiApiKey>> {
+  return post<ApiApiKey>(`/api/api-keys/${id}/revoke`);
+}
+
+export function importSales(channelId: string, csv: string): Promise<ApiResult<SalesImportResult>> {
+  return post<SalesImportResult>(`/api/channels/${channelId}/sales/import`, { csv });
 }
 
 export function authTelegram(payload: TelegramAuthPayload): Promise<ApiResult<{ user: ApiUser }>> {

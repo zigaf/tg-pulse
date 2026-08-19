@@ -1,53 +1,43 @@
-import { GrammyError, type Bot, type Context, type InlineKeyboard } from 'grammy';
+import type { Bot, InlineKeyboard } from 'grammy';
 import type { Channel } from '@tgpulse/db';
+import type { BotContext } from '../context';
 import { analyzeChannelLinks, analyzeLink } from '../fraud';
+import type { Dict } from '../i18n';
 import { backToFraudLinksMenu, CB, fraudChannelPickerMenu, fraudLinksMenu } from '../menus';
 import { getUserActiveChannels, getUserChannel, getUserLink } from '../queries';
-import { texts } from '../texts';
+import { safeEdit } from '../ui';
+import { fraudLinkButton, fraudLinksCard, fraudPickChannelCard, fraudReportCard } from '../views/fraud-view';
+import { editNoChannels, replyNoChannels } from './empty-states';
 
 /** Newest links only: older seedings are already settled and each one costs a few queries. */
 const FRAUD_LINKS_LIMIT = 8;
-const NOT_MODIFIED = 'message is not modified';
 
-/** Edit that tolerates "message is not modified" (e.g. re-opening the same view). */
-async function safeEdit(ctx: Context, text: string, replyMarkup: InlineKeyboard): Promise<void> {
-  try {
-    await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: replyMarkup });
-  } catch (error) {
-    if (error instanceof GrammyError && error.description.includes(NOT_MODIFIED)) return;
-    throw error;
-  }
-}
-
-async function buildLinksView(channel: Channel): Promise<{ text: string; keyboard: InlineKeyboard }> {
+async function buildLinksView(
+  dict: Dict,
+  channel: Channel,
+): Promise<{ text: string; keyboard: InlineKeyboard }> {
   const reports = await analyzeChannelLinks(channel.id, FRAUD_LINKS_LIMIT);
-  if (reports.length === 0) {
-    return {
-      text: [texts.fraud.linksHeader(channel.title), '', texts.fraud.noLinks].join('\n'),
-      keyboard: fraudLinksMenu([]),
-    };
-  }
-
   return {
-    text: texts.fraud.linksHeader(channel.title),
+    text: fraudLinksCard(dict, channel.title, reports.length > 0),
     keyboard: fraudLinksMenu(
-      reports.map((report) => ({ linkId: report.linkId, title: texts.fraud.linkButton(report) })),
+      dict,
+      reports.map((report) => ({ linkId: report.linkId, title: fraudLinkButton(dict, report) })),
     ),
   };
 }
 
-export function registerFraud(bot: Bot): void {
+export function registerFraud(bot: Bot<BotContext>): void {
   bot.command('fraud', async (ctx) => {
     if (ctx.chat.type !== 'private' || !ctx.from) return;
 
     const channels = await getUserActiveChannels(ctx.from.id);
     if (channels.length === 0) {
-      await ctx.reply(texts.common.noChannels);
+      await replyNoChannels(ctx);
       return;
     }
-    await ctx.reply(texts.fraud.pickChannel, {
+    await ctx.reply(fraudPickChannelCard(ctx.dict), {
       parse_mode: 'HTML',
-      reply_markup: fraudChannelPickerMenu(channels),
+      reply_markup: fraudChannelPickerMenu(ctx.dict, channels),
     });
   });
 
@@ -55,37 +45,45 @@ export function registerFraud(bot: Bot): void {
     await ctx.answerCallbackQuery();
     const channels = await getUserActiveChannels(ctx.from.id);
     if (channels.length === 0) {
-      await ctx.reply(texts.common.noChannels);
+      await editNoChannels(ctx);
       return;
     }
-    await safeEdit(ctx, texts.fraud.pickChannel, fraudChannelPickerMenu(channels));
+    await safeEdit(ctx, fraudPickChannelCard(ctx.dict), fraudChannelPickerMenu(ctx.dict, channels));
   });
 
   bot.callbackQuery(/^fr:ch:(.+)$/, async (ctx) => {
     const channel = await getUserChannel(ctx.from.id, ctx.match[1]);
     if (!channel) {
-      await ctx.answerCallbackQuery({ text: texts.common.channelUnavailable });
+      await ctx.answerCallbackQuery({ text: ctx.dict.common.channelUnavailable });
       return;
     }
     await ctx.answerCallbackQuery();
-    const view = await buildLinksView(channel);
+    const view = await buildLinksView(ctx.dict, channel);
     await safeEdit(ctx, view.text, view.keyboard);
   });
 
   bot.callbackQuery(/^fr:link:(.+)$/, async (ctx) => {
     const link = await getUserLink(ctx.from.id, ctx.match[1]);
     if (!link) {
-      await ctx.answerCallbackQuery({ text: texts.fraud.linkUnavailable });
+      await ctx.answerCallbackQuery({ text: ctx.dict.fraud.linkUnavailable });
       return;
     }
 
-    const report = await analyzeLink(link.id);
-    if (!report) {
-      await ctx.answerCallbackQuery({ text: texts.fraud.linkUnavailable });
+    // The channel is needed for the breadcrumb; it also re-checks access cheaply.
+    const [report, channel] = await Promise.all([
+      analyzeLink(link.id),
+      getUserChannel(ctx.from.id, link.channelId),
+    ]);
+    if (!report || !channel) {
+      await ctx.answerCallbackQuery({ text: ctx.dict.fraud.linkUnavailable });
       return;
     }
 
     await ctx.answerCallbackQuery();
-    await safeEdit(ctx, texts.fraud.report(report), backToFraudLinksMenu(link.channelId));
+    await safeEdit(
+      ctx,
+      fraudReportCard(ctx.dict, report, channel.title),
+      backToFraudLinksMenu(ctx.dict, link.channelId),
+    );
   });
 }

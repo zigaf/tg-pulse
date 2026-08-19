@@ -30,6 +30,20 @@ export async function getUserLink(tgUserId: number, linkId: string): Promise<Tra
   return channel ? link : null;
 }
 
+/** How far the user got through setup. Drives the /start checklist. */
+export async function getOnboardingProgress(
+  tgUserId: number,
+): Promise<{ hasChannel: boolean; hasLink: boolean }> {
+  const channels = await getUserActiveChannels(tgUserId);
+  if (channels.length === 0) return { hasChannel: false, hasLink: false };
+
+  const link = await prisma.trackedLink.findFirst({
+    where: { channelId: { in: channels.map((channel) => channel.id) } },
+    select: { id: true },
+  });
+  return { hasChannel: true, hasLink: link !== null };
+}
+
 /** Map of TrackedLink id -> label for the given ids (nulls filtered out by caller). */
 export async function resolveLinkLabels(linkIds: string[]): Promise<Map<string, string>> {
   if (linkIds.length === 0) return new Map();

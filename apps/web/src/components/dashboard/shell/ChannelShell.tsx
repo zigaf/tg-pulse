@@ -1,6 +1,14 @@
 'use client';
 
-import { ArrowLeft, ChartLineUp, LinkSimple, PaperPlaneTilt, SignOut, UsersThree } from '@phosphor-icons/react';
+import {
+  ArrowLeft,
+  ChartLineUp,
+  CurrencyCircleDollar,
+  LinkSimple,
+  PaperPlaneTilt,
+  SignOut,
+  UsersThree,
+} from '@phosphor-icons/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -13,6 +21,7 @@ const NAV_ITEMS = [
   { segment: '', label: 'Overview', icon: ChartLineUp, exact: true },
   { segment: '/links', label: 'Links', icon: LinkSimple, exact: false },
   { segment: '/postbacks', label: 'Postbacks', icon: PaperPlaneTilt, exact: false },
+  { segment: '/revenue', label: 'Revenue', icon: CurrencyCircleDollar, exact: false },
   { segment: '/subscribers', label: 'Subscribers', icon: UsersThree, exact: false },
 ] as const;
 

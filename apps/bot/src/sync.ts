@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import type { Bot } from 'grammy';
+import type { Bot, Context } from 'grammy';
 import { getPrisma, BotStatus } from '@tgpulse/db';
 
 const prisma = getPrisma();
@@ -8,7 +8,7 @@ const prisma = getPrisma();
  * Reconcile stored channel sizes with Telegram. Events give us the live delta;
  * this sweep corrects drift (updates missed while the bot was down, hidden joins).
  */
-export async function syncMemberCounts(bot: Bot): Promise<void> {
+export async function syncMemberCounts<C extends Context>(bot: Bot<C>): Promise<void> {
   const channels = await prisma.channel.findMany({ where: { botStatus: BotStatus.ACTIVE } });
 
   for (const channel of channels) {
@@ -32,6 +32,6 @@ export async function syncMemberCounts(bot: Bot): Promise<void> {
   }
 }
 
-export function startMemberCountSync(bot: Bot): void {
+export function startMemberCountSync<C extends Context>(bot: Bot<C>): void {
   cron.schedule('15 */6 * * *', () => void syncMemberCounts(bot), { timezone: 'Etc/UTC' });
 }

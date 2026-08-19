@@ -1,11 +1,13 @@
 import { randomBytes } from 'node:crypto';
-import { GrammyError, type Bot, type Context } from 'grammy';
+import { GrammyError, type Bot } from 'grammy';
 import { getPrisma, BotStatus } from '@tgpulse/db';
 import { config } from '../config';
+import type { BotContext } from '../context';
 import { CB, cancelMenu, channelPickerMenu, postCreateMenu } from '../menus';
 import { getUserActiveChannels, getUserChannel } from '../queries';
 import { clearState, getState, setState } from '../state';
-import { texts } from '../texts';
+import { askLabelCard, createdCard, pickChannelCard } from '../views/newlink-view';
+import { replyNoChannels } from './empty-states';
 
 const prisma = getPrisma();
 
@@ -19,16 +21,19 @@ function generateSlug(): string {
 }
 
 /** Entry point of the flow: channel picker or onboarding hint. Used by /newlink and callbacks. */
-export async function startNewlinkFlow(ctx: Context, tgUserId: number): Promise<void> {
+export async function startNewlinkFlow(ctx: BotContext, tgUserId: number): Promise<void> {
   const channels = await getUserActiveChannels(tgUserId);
   if (channels.length === 0) {
-    await ctx.reply(texts.common.noChannels);
+    await replyNoChannels(ctx);
     return;
   }
-  await ctx.reply(texts.newlink.pickChannel, { reply_markup: channelPickerMenu(channels) });
+  await ctx.reply(pickChannelCard(ctx.dict), {
+    parse_mode: 'HTML',
+    reply_markup: channelPickerMenu(ctx.dict, channels),
+  });
 }
 
-export function registerNewlink(bot: Bot): void {
+export function registerNewlink(bot: Bot<BotContext>): void {
   bot.command('newlink', async (ctx) => {
     if (ctx.chat.type !== 'private' || !ctx.from) return;
     await startNewlinkFlow(ctx, ctx.from.id);
@@ -43,22 +48,22 @@ export function registerNewlink(bot: Bot): void {
   bot.callbackQuery(/^nl:pick:(.+)$/, async (ctx) => {
     const channel = await getUserChannel(ctx.from.id, ctx.match[1]);
     if (!channel) {
-      await ctx.answerCallbackQuery({ text: texts.common.channelUnavailable });
+      await ctx.answerCallbackQuery({ text: ctx.dict.common.channelUnavailable });
       return;
     }
 
     setState(ctx.from.id, { step: 'awaiting_label', channelId: channel.id });
     await ctx.answerCallbackQuery();
-    await ctx.editMessageText(texts.newlink.askLabel(channel.title), {
+    await ctx.editMessageText(askLabelCard(ctx.dict, channel.title), {
       parse_mode: 'HTML',
-      reply_markup: cancelMenu(),
+      reply_markup: cancelMenu(ctx.dict),
     });
   });
 
   bot.callbackQuery(CB.nlCancel, async (ctx) => {
     clearState(ctx.from.id);
     await ctx.answerCallbackQuery();
-    await ctx.editMessageText(texts.newlink.cancelled).catch(() => {
+    await ctx.editMessageText(ctx.dict.newlink.cancelled).catch(() => {
       // message may be too old to edit; the state is cleared either way
     });
   });
@@ -72,14 +77,14 @@ export function registerNewlink(bot: Bot): void {
 
     const label = ctx.message.text.trim();
     if (!label) {
-      await ctx.reply(texts.newlink.emptyLabel, { reply_markup: cancelMenu() });
+      await ctx.reply(ctx.dict.newlink.emptyLabel, { reply_markup: cancelMenu(ctx.dict) });
       return;
     }
 
     const channel = await prisma.channel.findUnique({ where: { id: state.channelId } });
     if (!channel || channel.botStatus !== BotStatus.ACTIVE) {
       clearState(ctx.from.id);
-      await ctx.reply(texts.newlink.channelGone);
+      await ctx.reply(ctx.dict.newlink.channelGone);
       return;
     }
 
@@ -92,7 +97,7 @@ export function registerNewlink(bot: Bot): void {
     } catch (error) {
       clearState(ctx.from.id);
       const description = error instanceof GrammyError ? error.description : 'unexpected error';
-      await ctx.reply(texts.newlink.createFailed(description, channel.title));
+      await ctx.reply(ctx.dict.newlink.createFailed(description, channel.title));
       return;
     }
 
@@ -100,7 +105,7 @@ export function registerNewlink(bot: Bot): void {
     clearState(ctx.from.id);
 
     if (!trackedLink) {
-      await ctx.reply(texts.newlink.saveFailed);
+      await ctx.reply(ctx.dict.newlink.saveFailed);
       return;
     }
 
@@ -109,8 +114,8 @@ export function registerNewlink(bot: Bot): void {
     });
 
     await ctx.reply(
-      texts.newlink.created({
-        title: channel.title,
+      createdCard(ctx.dict, {
+        channelTitle: channel.title,
         label,
         goUrl: `${config.goBaseUrl}/l/${trackedLink.slug}`,
         inviteLink,
@@ -119,7 +124,7 @@ export function registerNewlink(bot: Bot): void {
       {
         parse_mode: 'HTML',
         link_preview_options: { is_disabled: true },
-        reply_markup: postCreateMenu(),
+        reply_markup: postCreateMenu(ctx.dict),
       },
     );
   });

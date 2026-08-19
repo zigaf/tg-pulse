@@ -74,7 +74,7 @@ function scheduleRetry(name: string, url: string): void {
 
 /**
  * Fire all matching active postbacks of the channel for a join/leave event.
- * Never throws — designed to be called as `void firePostbacks(...)` from the
+ * Never throws, designed to be called as `void firePostbacks(...)` from the
  * chat_member handler without blocking attribution processing.
  */
 export async function firePostbacks(

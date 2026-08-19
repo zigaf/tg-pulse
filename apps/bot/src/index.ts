@@ -1,3 +1,4 @@
+import rateLimit from '@fastify/rate-limit';
 import Fastify from 'fastify';
 import { webhookCallback } from 'grammy';
 import { createHash } from 'node:crypto';
@@ -6,19 +7,23 @@ import { bot } from './bot';
 import { registerChannels } from './commands/channels';
 import { registerFraud } from './commands/fraud';
 import { registerHelp } from './commands/help';
+import { registerLanguage } from './commands/language';
+import { registerNavigation } from './commands/navigation';
 import { registerNewlink } from './commands/newlink';
 import { registerNotifications } from './commands/notifications';
 import { registerStart } from './commands/start';
 import { registerStats } from './commands/stats';
 import { config } from './config';
 import { registerFallback } from './fallback';
+import { getDict, type Dict, type Lang } from './i18n';
 import { registerPixel } from './pixel';
 import { registerReports, startReportCron } from './reports';
 import { startMemberCountSync } from './sync';
-import { texts } from './texts';
 
+registerNavigation(bot);
 registerStart(bot);
 registerHelp(bot);
+registerLanguage(bot);
 registerChannels(bot);
 registerFraud(bot);
 registerNotifications(bot);
@@ -27,7 +32,17 @@ registerNewlink(bot);
 registerReports(bot);
 registerFallback(bot); // must be last: unknown-input hints + catch-all callback answer + bot.catch
 
-const app = Fastify({ logger: true });
+const app = Fastify({
+  logger: {
+    // The webhook path carries a secret; never write it to logs verbatim.
+    serializers: {
+      req(req) {
+        const url = req.url?.startsWith('/webhook/') ? '/webhook/[redacted]' : req.url;
+        return { method: req.method, url, remoteAddress: req.socket?.remoteAddress };
+      },
+    },
+  },
+});
 const prisma = getPrisma();
 
 app.get('/health', async () => ({ ok: true }));
@@ -40,6 +55,7 @@ const AD_CLICK_ID_KEYS = ['yclid', 'gclid', 'fbclid', 'ttclid'] as const;
 // ---------- Tracking redirect: go.<domain>/l/<slug> ----------
 app.get<{ Params: { slug: string }; Querystring: Record<string, unknown> }>(
   '/l/:slug',
+  { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
   async (req, reply) => {
   const link = await prisma.trackedLink.findUnique({ where: { slug: req.params.slug } });
   if (!link || link.isRevoked) {
@@ -85,29 +101,61 @@ app.get<{ Params: { slug: string }; Querystring: Record<string, unknown> }>(
 
 // ---------- Telegram webhook (production) ----------
 if (config.webhookSecret) {
-  app.post(`/webhook/${config.webhookSecret}`, webhookCallback(bot, 'fastify'));
+  // Path secret plus Telegram's secret_token header: a leaked URL alone is not enough.
+  app.post(
+    `/webhook/${config.webhookSecret}`,
+    { preHandler: (req, reply, done) => {
+        const token = req.headers['x-telegram-bot-api-secret-token'];
+        if (token !== config.webhookSecret) {
+          reply.code(401).send({ error: 'unauthorized' });
+          return;
+        }
+        done();
+      } },
+    webhookCallback(bot, 'fastify'),
+  );
+}
+
+const RUSSIAN_CODE: Lang = 'ru';
+
+/** The command menu Telegram shows, rendered from a dictionary. */
+function commandList(dict: Dict): { command: string; description: string }[] {
+  return [
+    { command: 'start', description: dict.commands.start },
+    { command: 'newlink', description: dict.commands.newlink },
+    { command: 'stats', description: dict.commands.stats },
+    { command: 'channels', description: dict.commands.channels },
+    { command: 'fraud', description: dict.commands.fraud },
+    { command: 'notifications', description: dict.commands.notifications },
+    { command: 'language', description: dict.commands.language },
+    { command: 'help', description: dict.commands.help },
+  ];
 }
 
 async function main() {
-  // chat_member updates are NOT delivered by default — must be requested explicitly
+  // chat_member updates are NOT delivered by default, they must be requested explicitly
   const allowedUpdates = ['message', 'chat_member', 'my_chat_member', 'callback_query'] as const;
+
+  // Abuse throttling for the public endpoints (/px, /l/:slug); per-route limits opt in
+  await app.register(rateLimit, {
+    global: false,
+    max: 120,
+    timeWindow: '1 minute',
+    keyGenerator: (req) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? req.ip,
+  });
 
   await app.listen({ port: config.port, host: '0.0.0.0' });
 
   startReportCron();
   startMemberCountSync(bot);
 
-  await bot.api.setMyCommands([
-    { command: 'start', description: texts.commands.start },
-    { command: 'newlink', description: texts.commands.newlink },
-    { command: 'stats', description: texts.commands.stats },
-    { command: 'channels', description: texts.commands.channels },
-    { command: 'fraud', description: texts.commands.fraud },
-    { command: 'help', description: texts.commands.help },
-  ]);
+  // Telegram keeps one command list per language_code, so both locales are published.
+  await bot.api.setMyCommands(commandList(getDict('en')));
+  await bot.api.setMyCommands(commandList(getDict('ru')), { language_code: RUSSIAN_CODE });
 
   if (config.webhookSecret && config.publicUrl) {
     await bot.api.setWebhook(`${config.publicUrl}/webhook/${config.webhookSecret}`, {
+      secret_token: config.webhookSecret,
       allowed_updates: [...allowedUpdates],
     });
     app.log.info('Bot running in webhook mode');

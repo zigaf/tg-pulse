@@ -1,12 +1,19 @@
 import { Bot } from 'grammy';
 import { getPrisma, BotStatus, EventType, Attribution } from '@tgpulse/db';
 import { config } from './config';
+import type { BotContext } from './context';
+import { getDict } from './i18n';
+import { withDict } from './i18n/middleware';
+import { getUserLang } from './i18n/user-lang';
 import { hasSubscribers, notifyMemberEvent } from './notifications';
 import { firePostbacks } from './postbacks';
-import { texts } from './texts';
+import { channelConnectedCard } from './views/home-view';
 
-export const bot = new Bot(config.botToken);
+export const bot = new Bot<BotContext>(config.botToken);
 const prisma = getPrisma();
+
+// First in the chain: every handler below and in commands/ reads ctx.dict.
+bot.use(withDict());
 
 // ---------- Onboarding ----------
 
@@ -74,12 +81,12 @@ bot.on('my_chat_member', async (ctx) => {
     },
   });
 
-  await bot.api.sendMessage(
-    from.id,
-    texts.onboarding.channelConnected(chat.title ?? 'Channel'),
-  ).catch(() => {
-    // user may not have started the bot in DM — fine, they'll see the channel in the dashboard
-  });
+  const dict = getDict(await getUserLang(from.id, from.language_code));
+  await bot.api
+    .sendMessage(from.id, channelConnectedCard(dict, chat.title ?? 'Channel'), { parse_mode: 'HTML' })
+    .catch(() => {
+      // user may not have started the bot in DM, they'll see the channel in the dashboard
+    });
 });
 
 // ---------- Attribution core: joins & leaves ----------
@@ -143,7 +150,7 @@ bot.on('chat_member', async (ctx) => {
     void firePostbacks(channel, 'join', link, tgUserId);
 
     // Instant alerts for opted-in users; never blocks attribution handling
-    void notifyMemberEvent(bot.api, channel, EventType.JOIN, link?.label ?? texts.sources.organic);
+    void notifyMemberEvent(bot.api, channel, EventType.JOIN, link?.label ?? null);
   } else {
     // LEAVE
     const sub = await prisma.subscriber.findUnique({
@@ -168,7 +175,7 @@ bot.on('chat_member', async (ctx) => {
 
     // Instant alerts for opted-in users; never blocks attribution handling
     if (await hasSubscribers(channel.id)) {
-      void notifyMemberEvent(bot.api, channel, EventType.LEAVE, sourceLink?.label ?? texts.sources.organic);
+      void notifyMemberEvent(bot.api, channel, EventType.LEAVE, sourceLink?.label ?? null);
     }
   }
 });

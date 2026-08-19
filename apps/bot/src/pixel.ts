@@ -93,7 +93,7 @@ async function recordPixelEvent(payload: PixelPayload): Promise<void> {
 
 /** Pixel engine: serves the landing-page script and ingests its beacons. */
 export function registerPixel(app: FastifyInstance): void {
-  // navigator.sendBeacon(string) posts as text/plain — accept it as a raw string
+  // navigator.sendBeacon(string) posts as text/plain, accept it as a raw string
   app.addContentTypeParser('text/plain', { parseAs: 'string' }, (_req, body, done) => {
     done(null, body);
   });
@@ -110,7 +110,8 @@ export function registerPixel(app: FastifyInstance): void {
     return withCors(reply).code(204).send();
   });
 
-  app.post('/px', async (req, reply) => {
+  // Public ingest: throttled per IP so the events table cannot be flooded
+  app.post('/px', { config: { rateLimit: { max: 240, timeWindow: '1 minute' } } }, async (req, reply) => {
     const payload = parsePixelPayload(req.body);
 
     // Fire-and-forget: never make the landing page wait for a stats write

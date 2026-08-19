@@ -15,12 +15,6 @@ export function percent(share: number): string {
   return `${Math.round(value)}%`;
 }
 
-/** Spell out small counts so recommendations read like a sentence, not a log line. */
-export function numberWord(value: number): string {
-  const words = ['zero', 'one', 'two', 'three', 'four', 'five'];
-  return words[value] ?? String(value);
-}
-
 /** Cut a label down so it still fits a Telegram inline button. */
 export function truncate(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
