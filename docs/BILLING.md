@@ -8,7 +8,7 @@ Billing is per workspace, with a channel quota. Not per channel.
 
 | | Free | Pro | Agency |
 |---|---|---|---|
-| Price | 0 | 1000 XTR / 30 days (~$19) | 4000 XTR / 30 days (~$79) |
+| Price | 0 | 10 XTR / 30 days (~$0.20) | 4000 XTR / 30 days (~$79) |
 | Channels | 1 | 3 | 25 |
 | Tracking links per channel | 5 | unlimited | unlimited |
 | Attribution, joins/leaves, daily report, instant alerts | yes | yes | yes |

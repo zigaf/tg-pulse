@@ -27,7 +27,7 @@ const TIERS: readonly Tier[] = [
   },
   {
     name: 'Pro',
-    price: '$19',
+    price: '$0.20',
     period: 'monthly, 3 channels',
     badge: 'most popular',
     featured: true,

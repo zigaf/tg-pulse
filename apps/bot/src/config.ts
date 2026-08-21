@@ -24,4 +24,11 @@ export const config = {
   /** Web dashboard URL used in bot buttons and help texts. */
   /** Dashboard link shown in bot menus. Set DASHBOARD_URL per environment. */
   dashboardUrl: stripTrailingSlash(process.env.DASHBOARD_URL ?? 'http://localhost:3000/app'),
+  /** Telegram user ids allowed to run /admin commands. Empty set = feature disabled. */
+  adminTgIds: new Set(
+    (process.env.ADMIN_TG_IDS ?? '')
+      .split(',')
+      .map((part) => Number(part.trim()))
+      .filter((id) => Number.isInteger(id) && id > 0),
+  ),
 };

@@ -47,6 +47,14 @@ CSV exports for subscribers, links and events. Buyer tag on links with a compari
 manager. Landing-post links redirect straight to a channel post, validated against the channel's own
 identity so they cannot become an open redirect.
 
+**Engineering hardening (2026-08-21).** Prisma switched from `db push` to real migrations: `0_init`
+baseline plus `scripts/migrate-deploy.mjs` (deploy, baseline-on-P3005, retry) run by `railway:start`.
+GitHub Actions CI: typecheck, vitest, both builds. Sentry wired into bot (grammY `bot.catch`, Fastify
+`onError`) and web (`instrumentation.ts` / `instrumentation-client.ts`); dormant until `SENTRY_DSN` /
+`NEXT_PUBLIC_SENTRY_DSN` are set. Vitest suite covers billing invariants, invoice payload parsing and
+quota math. `/admin grant|revoke` support commands gated by `ADMIN_TG_IDS`. Pro price set to 10 XTR
+(test pricing) across bot, web catalog, landing and BILLING.md.
+
 ## Known gaps / next
 
 1. Shared `createTrackedLink` helper: slug and invite-link rules are implemented twice (web + bot).

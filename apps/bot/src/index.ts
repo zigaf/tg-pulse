@@ -1,3 +1,4 @@
+import { reportError } from './sentry'; // must be first: Sentry.init before any other import runs
 import rateLimit from '@fastify/rate-limit';
 import Fastify from 'fastify';
 import { webhookCallback } from 'grammy';
@@ -5,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { getPrisma } from '@tgpulse/db';
 import { startBillingCron } from './billing-sweep';
 import { bot } from './bot';
+import { registerAdmin } from './commands/admin';
 import { registerBilling } from './commands/billing';
 import { registerBulklinks } from './commands/bulklinks';
 import { registerChannels } from './commands/channels';
@@ -38,6 +40,7 @@ registerNewlink(bot);
 registerBulklinks(bot);
 registerUpgrade(bot);
 registerBilling(bot);
+registerAdmin(bot);
 registerReports(bot);
 registerFallback(bot); // must be last: unknown-input hints + catch-all callback answer + bot.catch
 
@@ -55,6 +58,11 @@ const app = Fastify({
 const prisma = getPrisma();
 
 app.get('/health', async () => ({ ok: true }));
+
+// Server-side errors on public endpoints (/l/:slug, /px, webhook) reach Sentry too.
+app.addHook('onError', async (req, _reply, error) => {
+  reportError(error, { method: req.method, url: req.url });
+});
 
 // Landing-page pixel: GET /pixel.js + POST /px beacon ingest
 registerPixel(app);
@@ -193,5 +201,6 @@ async function main() {
 
 main().catch((e) => {
   console.error(e);
+  reportError(e);
   process.exit(1);
 });

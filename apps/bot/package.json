@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@fastify/rate-limit": "^11.2.0",
+    "@sentry/node": "^10.70.0",
     "@tgpulse/db": "*",
     "fastify": "^5.2.1",
     "grammy": "^1.36.1",

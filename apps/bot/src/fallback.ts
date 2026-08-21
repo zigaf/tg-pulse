@@ -1,6 +1,7 @@
 import type { Bot } from 'grammy';
 import type { BotContext } from './context';
 import { DEFAULT_LANG, getDict } from './i18n';
+import { reportError } from './sentry';
 
 /**
  * Resilience layer. Register LAST so it only catches what no other handler claimed:
@@ -20,6 +21,7 @@ export function registerFallback(bot: Bot<BotContext>): void {
 
   bot.catch((err) => {
     console.error('Bot error while handling update', err.error);
+    reportError(err.error, { updateId: err.ctx.update.update_id, chatId: err.ctx.chat?.id });
     const ctx = err.ctx;
     if (ctx.callbackQuery) {
       void ctx.answerCallbackQuery().catch(() => {});

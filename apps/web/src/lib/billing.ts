@@ -53,8 +53,8 @@ export const PLAN_CATALOG: Record<Plan, PlanCatalogEntry> = {
   PRO: {
     plan: 'PRO',
     label: 'Pro',
-    priceStars: 1000,
-    priceHint: 'about $19 per 30 days',
+    priceStars: 10,
+    priceHint: 'about $0.20 per 30 days',
     tagline: 'For buyers running paid traffic every week.',
     limits: { channels: 3, linksPerChannel: null, members: 5 },
     features: { postbacks: true, revenue: true, fraudFull: true },

@@ -54,7 +54,7 @@ export const PLANS: Record<Plan, PlanDefinition> = {
   },
   [Plan.PRO]: {
     plan: Plan.PRO,
-    priceXtr: 1000,
+    priceXtr: 10,
     periodDays: BILLING_PERIOD_DAYS,
     limits: { channels: 3, linksPerChannel: UNLIMITED, members: 5 },
     features: { postbacks: true, revenue: true, fraudFull: true },
@@ -261,6 +261,48 @@ export async function applySuccessfulPayment(input: SuccessfulPaymentInput): Pro
     if (isUniqueViolation(error)) return replayed(input.workspaceId);
     throw error;
   }
+}
+
+// ---------- Admin write path ----------
+
+/**
+ * Manual plan change for support and testing, bypassing payments entirely.
+ * No PaymentEvent is written: the payment ledger stays a record of real charges.
+ * Granting sets an absolute period of `days` from now; FREE expires everything.
+ */
+export async function grantPlanManually(
+  workspaceId: string,
+  plan: Plan,
+  days: number,
+): Promise<Subscription | null> {
+  return prisma.$transaction(async (tx) => {
+    if (plan === Plan.FREE) {
+      await tx.subscription.updateMany({
+        where: { workspaceId, status: { not: SubscriptionStatus.EXPIRED } },
+        data: { status: SubscriptionStatus.EXPIRED },
+      });
+      await tx.workspace.update({ where: { id: workspaceId }, data: { plan } });
+      return null;
+    }
+
+    const current = await tx.subscription.findFirst({
+      where: { workspaceId },
+      orderBy: { currentPeriodEnd: 'desc' },
+    });
+    const data = {
+      plan,
+      status: SubscriptionStatus.ACTIVE,
+      provider: PaymentProvider.TELEGRAM_STARS,
+      providerRef: null,
+      currentPeriodEnd: addDays(new Date(), days),
+      cancelAtPeriodEnd: false,
+    };
+    const saved = current
+      ? await tx.subscription.update({ where: { id: current.id }, data })
+      : await tx.subscription.create({ data: { ...data, workspaceId } });
+    await tx.workspace.update({ where: { id: workspaceId }, data: { plan } });
+    return saved;
+  });
 }
 
 /** The state after a duplicate charge, so callers can render without a second write. */
