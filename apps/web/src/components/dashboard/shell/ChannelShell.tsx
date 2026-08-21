@@ -6,6 +6,7 @@ import {
   CurrencyCircleDollar,
   LinkSimple,
   Lock,
+  Newspaper,
   Megaphone,
   PaperPlaneTilt,
   SignOut,
@@ -41,6 +42,7 @@ const NAV_ITEMS: {
   feature?: GatedFeature;
 }[] = [
   { segment: '', label: 'Overview', icon: ChartLineUp, exact: true },
+  { segment: '/content', label: 'Content', icon: Newspaper, exact: false },
   { segment: '/links', label: 'Links', icon: LinkSimple, exact: false },
   { segment: '/postbacks', label: 'Postbacks', icon: PaperPlaneTilt, exact: false, feature: 'postbacks' },
   // Native ad-platform connections; same gate as postbacks (docs/AD-INTEGRATIONS.md).

@@ -674,6 +674,66 @@ export interface PublicReportData {
   sources: PublicReportSource[];
 }
 
+/* ---------- content module (docs/CONTENT.md) ---------- */
+
+export type PostKind =
+  | 'TEXT'
+  | 'PHOTO'
+  | 'VIDEO'
+  | 'ANIMATION'
+  | 'DOCUMENT'
+  | 'AUDIO'
+  | 'VOICE'
+  | 'STICKER'
+  | 'POLL'
+  | 'OTHER';
+
+export interface ContentReactionRow {
+  reaction: string;
+  count: number;
+}
+
+export interface ContentPostRow {
+  id: string;
+  messageId: number;
+  postedAt: string;
+  isEdited: boolean;
+  kind: PostKind;
+  preview: string;
+  reactions: ContentReactionRow[];
+  reactionsTotal: number;
+  joinsAfter: number;
+  leavesAfter: number;
+  /** Reactions per 100 current subscribers; null while the member count is unknown. */
+  err: number | null;
+}
+
+export interface ContentCohortPoint {
+  date: string;
+  newJoins: number;
+  returningJoins: number;
+}
+
+export interface ContentReport {
+  posts: ContentPostRow[];
+  totals: {
+    posts: number;
+    reactionsTotal: number;
+    avgReactions: number;
+    avgErr: number | null;
+    newJoins: number;
+    returningJoins: number;
+    /** Percent of window joins that are rejoins. */
+    returningShare: number;
+  };
+  cohorts: ContentCohortPoint[];
+  memberCount: number | null;
+}
+
+export function getChannelContent(channelId: string, days: number): Promise<ApiResult<ContentReport>> {
+  return request<ContentReport>(`/api/channels/${channelId}/content?days=${days}`);
+}
+
 export interface BuyerRow {
   /** null = links with no buyer assigned. */
   buyer: string | null;

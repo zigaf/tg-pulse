@@ -25,6 +25,7 @@ import { isEncryptionConfigured } from './crypto';
 import { registerFallback } from './fallback';
 import { getDict, type Dict, type Lang } from './i18n';
 import { registerPixel } from './pixel';
+import { registerPostTracking } from './posts';
 import { registerReports, startReportCron } from './reports';
 import { startMemberCountSync } from './sync';
 
@@ -42,6 +43,7 @@ registerUpgrade(bot);
 registerBilling(bot);
 registerAdmin(bot);
 registerReports(bot);
+registerPostTracking(bot);
 registerFallback(bot); // must be last: unknown-input hints + catch-all callback answer + bot.catch
 
 const app = Fastify({
@@ -155,8 +157,12 @@ function commandList(dict: Dict): { command: string; description: string }[] {
 async function main() {
   // chat_member updates are NOT delivered by default, they must be requested explicitly;
   // pre_checkout_query is the same, and without it Stars payments never complete.
+  // message_reaction_count (anonymous per-post reaction totals) is also opt-in.
   const allowedUpdates = [
     'message',
+    'channel_post',
+    'edited_channel_post',
+    'message_reaction_count',
     'chat_member',
     'my_chat_member',
     'callback_query',

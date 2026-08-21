@@ -190,8 +190,49 @@ model Channel {
   alertSubs   AlertSubscription[]
   shareLinks  ShareLink[]
   integrations AdIntegration[]
+  posts       ChannelPost[]
 
   @@map("channels")
+}
+
+/**
+ * One channel post as the Bot API delivers it: content metadata plus anonymous
+ * reaction counts (message_reaction_count updates). View counts are MTProto-only
+ * and deliberately absent — ER is computed against the member count instead.
+ * Only posts published after the channel was connected exist here.
+ */
+model ChannelPost {
+  id             String    @id @default(cuid())
+  channelId      String    @map("channel_id")
+  /** Telegram message id, sequential per chat. */
+  messageId      Int       @map("message_id")
+  postedAt       DateTime  @map("posted_at")
+  editedAt       DateTime? @map("edited_at")
+  kind           PostKind
+  /** First ~160 chars of text or caption; empty for media without caption. */
+  preview        String    @default("")
+  /** Latest anonymous reaction counts: [{ reaction, count }]. */
+  reactions      Json?
+  reactionsTotal Int       @default(0) @map("reactions_total")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  channel        Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, messageId])
+  @@index([channelId, postedAt])
+  @@map("channel_posts")
+}
+
+enum PostKind {
+  TEXT
+  PHOTO
+  VIDEO
+  ANIMATION
+  DOCUMENT
+  AUDIO
+  VOICE
+  STICKER
+  POLL
+  OTHER
 }
 
 enum BotStatus {

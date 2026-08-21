@@ -44,6 +44,11 @@ links with pixel install, postbacks, subscribers, revenue. Every web response ca
 headers: CSP scoped to the Telegram widget, HSTS, nosniff, frame denial, referrer and permissions
 policies.
 
+**Content module.** Every post of a connected channel is tracked from `channel_post` updates with
+its type, preview and anonymous reaction counts (`message_reaction_count`). The Content page shows
+per-post joins/leaves within 24h, ERR (reactions per 100 subscribers — the Bot API has no view
+counts, and the UI says so) and daily join cohorts split into first-time vs returning. docs/CONTENT.md.
+
 **Monetization.** Free/Pro/Agency with workspace-level quotas (see docs/BILLING.md). Payment runs on
 Telegram Stars inside the bot (`/upgrade`, `/billing`): recurring invoice with a one-off fallback,
 pre-checkout validation, idempotent activation keyed by the Telegram charge id, daily expiry sweep.
@@ -70,11 +75,12 @@ quota math. `/admin grant|revoke` support commands gated by `ADMIN_TG_IDS`. Pro 
 
 ## Known gaps / next
 
-1. Content module: post performance, ER, new vs returning cohorts (Prizma parity).
-2. Card payments (Lemon Squeezy) for buyers who do not want Stars; the provider enum is already in place.
-3. Stars payments are untested against a real charge: run one live Pro purchase and verify the receipt,
+1. Card payments (Lemon Squeezy) for buyers who do not want Stars; the provider enum is already in place.
+2. Stars payments are untested against a real charge: run one live Pro purchase and verify the receipt,
    the subscription period and the renewal update.
-4. Overview aggregates events in JS per request; move to SQL grouping or cache before ~5-10k events/channel.
-5. Shared `createTrackedLink` helper: slug and invite-link rules are implemented twice (web + bot).
-6. Rate limits are per process and in memory, and `clientIp` trusts the first `X-Forwarded-For` hop
+3. Overview and the content module aggregate events in JS per request (content also does an
+   unbounded subscriber `IN` lookup for cohorts); move to SQL grouping or cache before
+   ~5-10k events/channel.
+4. Shared `createTrackedLink` helper: slug and invite-link rules are implemented twice (web + bot).
+5. Rate limits are per process and in memory, and `clientIp` trusts the first `X-Forwarded-For` hop
    without a trusted-proxy allowlist; both need revisiting if the web app scales out.

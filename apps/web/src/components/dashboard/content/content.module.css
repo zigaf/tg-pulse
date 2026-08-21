@@ -1,0 +1,195 @@
+/* Content module: post performance and join cohorts. Reuses the overview's
+   segment control and tile system so the two screens read as one product. */
+
+.pageHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.3rem;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  font-size: 1.35rem;
+}
+
+.pageHint {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 0.2rem;
+}
+
+.segments {
+  composes: segments from '../overview/overview.module.css';
+}
+
+.segment {
+  composes: segment from '../overview/overview.module.css';
+}
+
+.segmentActive {
+  composes: segmentActive from '../overview/overview.module.css';
+}
+
+.tiles {
+  composes: tiles from '../overview/overview.module.css';
+}
+
+.tile {
+  composes: tile from '../overview/overview.module.css';
+}
+
+.tileLabel {
+  composes: tileLabel from '../overview/overview.module.css';
+}
+
+.tileValue {
+  composes: tileValue from '../overview/overview.module.css';
+}
+
+.tileNote {
+  font-size: 0.64rem;
+  color: var(--color-text-muted);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin: 1.6rem 0 0.7rem;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  font-size: 0.95rem;
+}
+
+.sectionHint {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+/* ---------- cohort chart ---------- */
+
+.cohortCard {
+  padding: 1rem 1.2rem 0.8rem;
+}
+
+.cohortChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 120px;
+}
+
+.cohortCol {
+  flex: 1 1 0;
+  min-width: 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+}
+
+.cohortNew {
+  background: oklch(62% 0.21 288 / 0.85);
+  border-radius: 2px 2px 0 0;
+}
+
+.cohortReturning {
+  background: oklch(75% 0.14 85 / 0.8);
+  border-radius: 2px 2px 0 0;
+}
+
+.cohortNew + .cohortReturning,
+.cohortReturning + .cohortNew {
+  border-radius: 0;
+}
+
+.cohortLegend {
+  display: flex;
+  gap: 1.1rem;
+  margin-top: 0.7rem;
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+}
+
+.legendSwatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  margin-right: 0.35rem;
+  vertical-align: -1px;
+}
+
+.legendNew {
+  background: oklch(62% 0.21 288 / 0.85);
+}
+
+.legendReturning {
+  background: oklch(75% 0.14 85 / 0.8);
+}
+
+/* ---------- posts table ---------- */
+
+.postCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.postPreview {
+  font-size: 0.78rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.postPreviewEmpty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.postMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.64rem;
+  color: var(--color-text-muted);
+}
+
+.kindBadge {
+  font-size: 0.6rem;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.06rem 0.4rem;
+}
+
+.reactionsCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.reactionsTop {
+  font-size: 0.66rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* ---------- capability note ---------- */
+
+.capabilityNote {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  margin-top: 1rem;
+}
