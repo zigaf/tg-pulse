@@ -65,6 +65,8 @@ export async function safeFetch(
   init: SafeFetchInit = {},
 ): Promise<SafeFetchResponse> {
   let url = rawUrl;
+  let headers = init.headers;
+  let body = init.body;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
     const validatedIp = await resolvePublicAddress(url);
@@ -72,8 +74,8 @@ export async function safeFetch(
     try {
       const res = await undiciFetch(url, {
         method: init.method ?? 'GET',
-        headers: init.headers,
-        body: init.body,
+        headers,
+        body,
         redirect: 'manual',
         signal: AbortSignal.timeout(timeoutMs),
         // Pin the connection to the address the guard just approved: plain DNS
@@ -89,7 +91,14 @@ export async function safeFetch(
 
       const location = res.headers.get('location');
       if (!location) return { status: res.status, headers: res.headers, body: '' };
-      url = new URL(location, url).toString();
+      const next = new URL(location, url);
+      // Never hand headers or the request body to a host the caller did not
+      // address: either may carry credentials (Access-Token headers, OAuth bodies).
+      if (next.origin !== new URL(url).origin) {
+        headers = undefined;
+        body = undefined;
+      }
+      url = next.toString();
     } finally {
       void agent.close();
     }

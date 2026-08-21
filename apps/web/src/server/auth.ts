@@ -63,10 +63,14 @@ export async function consumeLoginNonce(hash: string): Promise<boolean> {
     throw error;
   }
 
-  const pruneBefore = new Date(Date.now() - 2 * LOGIN_MAX_AGE_SECONDS * 1000);
-  void prisma.loginNonce
-    .deleteMany({ where: { createdAt: { lt: pruneBefore } } })
-    .catch(() => undefined);
+  // Sampled prune (~1 in 16 logins, keyed on the hash so it stays deterministic):
+  // an every-login deleteMany would double DB round-trips exactly during login bursts.
+  if (parseInt(hash[0] ?? '0', 16) === 0) {
+    const pruneBefore = new Date(Date.now() - 2 * LOGIN_MAX_AGE_SECONDS * 1000);
+    void prisma.loginNonce
+      .deleteMany({ where: { createdAt: { lt: pruneBefore } } })
+      .catch(() => undefined);
+  }
   return true;
 }
 

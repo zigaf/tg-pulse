@@ -93,6 +93,8 @@ const googleConfigSchema = z.object({
   loginAccountId: z
     .string()
     .trim()
+    // Dashes-only input must fail loudly, not silently collapse to "no manager account".
+    .refine((value) => value === '' || /\d/.test(value), 'Manager id must be digits only')
     .transform((value) => value.replace(/-/g, ''))
     .pipe(z.string().regex(/^\d{0,15}$/, 'Manager id must be digits only'))
     .default(''),

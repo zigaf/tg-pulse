@@ -143,7 +143,11 @@ export const AD_PROVIDERS: Record<AdProvider, AdProviderDescriptor> = {
         name: 'clientId',
         label: 'OAuth client id',
         placeholder: '1234567890-abc.apps.googleusercontent.com',
-        hint: 'Google Cloud console, an OAuth client in a project with the Data Manager API enabled.',
+        // Not sensitive by itself, but stored in the encrypted credentials blob with the
+        // secret pair — marking it secret gives it the same "empty keeps the stored value"
+        // edit semantics. Changing credentials means filling all three fields together.
+        secret: true,
+        hint: 'Google Cloud console, an OAuth client in a project with the Data Manager API enabled. To change credentials, fill all three fields.',
       },
       {
         name: 'clientSecret',

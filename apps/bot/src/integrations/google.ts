@@ -205,8 +205,10 @@ export const googleAdapter: AdAdapter = {
       const token = await fetchAccessToken(parseGoogleCreds(creds));
 
       const res = await postIngest(token, buildIngestBody(cfg, [testEvent(cfg)], true));
-      if (res.status >= 400) {
-        return { ok: false, detail: errorText(res.status, safeJson(res.body), res.body) };
+      const json = safeJson(res.body);
+      // A 200 with a non-JSON body proves nothing; treat it as a failed check.
+      if (res.status >= 400 || !json) {
+        return { ok: false, detail: errorText(res.status, json, res.body) };
       }
       return {
         ok: true,

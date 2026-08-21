@@ -312,7 +312,8 @@ async function testGoogle(
     }),
     readBody: true,
   });
-  if (probe.status !== 200) {
+  // A 200 with a non-JSON body proves nothing; require a parseable response.
+  if (probe.status !== 200 || Object.keys(parseJson(probe.body)).length === 0) {
     return { ok: false, detail: googleError(probe.body, probe.status) };
   }
 

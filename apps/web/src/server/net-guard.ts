@@ -71,6 +71,7 @@ export async function safeFetch(
   const method = options.method ?? 'GET';
   let url = rawUrl;
   let headers = options.headers;
+  let body = options.body;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
     const validatedIp = await resolvePublicAddress(url);
@@ -79,7 +80,7 @@ export async function safeFetch(
       const res = await undiciFetch(url, {
         method,
         headers: headers as Record<string, string> | undefined,
-        body: method === 'GET' ? undefined : options.body,
+        body: method === 'GET' ? undefined : body,
         redirect: 'manual',
         signal: AbortSignal.timeout(timeoutMs),
         // Pin the connection to the address the guard just approved: plain DNS
@@ -99,8 +100,12 @@ export async function safeFetch(
       }
 
       const next = new URL(location, url);
-      // Never hand an Authorization header to a host the caller did not address.
-      if (next.origin !== new URL(url).origin) headers = undefined;
+      // Never hand headers or the request body to a host the caller did not
+      // address: either may carry credentials (Authorization, OAuth form bodies).
+      if (next.origin !== new URL(url).origin) {
+        headers = undefined;
+        body = undefined;
+      }
       url = next.toString();
     } finally {
       void agent.close();
