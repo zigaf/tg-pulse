@@ -337,7 +337,9 @@ export function TeamView() {
               <h2 className={styles.sectionTitle}>Client report branding</h2>
               <p className={styles.sectionHint}>Public report links carry this identity instead of TGPulse</p>
             </div>
-            <BrandingCard workspace={workspace} isManager={isManager} />
+            {/* Keyed by workspace: switching ?ws= must remount the form, or stale
+                fields from the previous workspace could overwrite this one's brand. */}
+            <BrandingCard key={workspace.id} workspace={workspace} isManager={isManager} />
           </>
         )}
       </section>
