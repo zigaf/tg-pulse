@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { getPrisma, type ShareLink } from '@tgpulse/db';
+import { getEntitlements } from './entitlements';
 import { ApiError } from './http';
 
 /**
@@ -54,6 +55,8 @@ export interface PublicShareLink {
   label: string | null;
   windowDays: number;
   channel: { id: string; title: string; username: string | null };
+  /** Owning workspace, so the route can resolve white-label branding. */
+  workspaceId: string;
 }
 
 /**
@@ -73,7 +76,7 @@ export async function resolvePublicShareLink(
       windowDays: true,
       revokedAt: true,
       expiresAt: true,
-      channel: { select: { id: true, title: true, username: true } },
+      channel: { select: { id: true, title: true, username: true, workspaceId: true } },
     },
   });
 
@@ -86,8 +89,33 @@ export async function resolvePublicShareLink(
     token: link.token,
     label: link.label,
     windowDays: link.windowDays,
-    channel: link.channel,
+    channel: { id: link.channel.id, title: link.channel.title, username: link.channel.username },
+    workspaceId: link.channel.workspaceId,
   };
+}
+
+export interface ReportBrand {
+  name: string;
+  /** http(s) target behind the brand name; null renders plain text. */
+  url: string | null;
+}
+
+/**
+ * White-label identity for a public report, or null for default TGPulse branding.
+ * Resolved per open on purpose: a lapsed Agency subscription drops the branding
+ * on the very next view without any sweep.
+ */
+export async function resolveReportBrand(workspaceId: string): Promise<ReportBrand | null> {
+  const workspace = await getPrisma().workspace.findUnique({
+    where: { id: workspaceId },
+    select: { brandName: true, brandUrl: true },
+  });
+  if (!workspace?.brandName) return null;
+
+  const { features } = await getEntitlements(workspaceId);
+  if (!features.whiteLabel) return null;
+
+  return { name: workspace.brandName, url: workspace.brandUrl };
 }
 
 /** Fire-and-forget view counter: a failed increment must never break the report. */

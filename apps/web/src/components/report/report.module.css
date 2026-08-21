@@ -15,6 +15,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  /* Constant height whether it holds a wordmark, a brand or (while loading) nothing. */
+  min-height: 48px;
   padding: 0.75rem 1.5rem;
   border-bottom: 1px solid var(--color-border);
   background: oklch(11% 0.012 290 / 0.85);
@@ -28,6 +30,8 @@
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--color-text);
+  /* The white-label variant renders as a link; it must not read differently. */
+  text-decoration: none;
 }
 
 .wordmark svg {

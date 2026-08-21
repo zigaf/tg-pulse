@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
         // Effective plan: an expired subscription reads FREE even before the sweep syncs the column.
         plan,
         entitlements: { limits, features },
+        brandName: workspace.brandName,
+        brandUrl: workspace.brandUrl,
         channels: workspace.channels.map((channel) => ({
           id: channel.id,
           title: channel.title,

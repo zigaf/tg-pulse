@@ -17,6 +17,7 @@ Billing is per workspace, with a channel quota. Not per channel.
 | Postbacks | no | yes | yes |
 | Revenue module (API keys, ingest, CSV, ROMI) | no | yes | yes |
 | Fraud reports | last link only | yes | yes |
+| White-label client reports | no | no | yes |
 | Team members per workspace | 1 | 5 | 25 |
 
 `FEATURES` and `LIMITS` live in one shared module per app; do not hardcode numbers in routes or handlers.
@@ -25,7 +26,12 @@ Canonical keys, identical in `apps/bot/src/billing.ts`, `apps/web/src/server/ent
 `apps/web/src/lib/billing.ts`:
 
 - limits: `channels`, `linksPerChannel` (null = unlimited), `members`
-- features: `postbacks`, `revenue`, `fraudFull`
+- features: `postbacks`, `revenue`, `fraudFull`, `whiteLabel`
+
+White-label: the workspace sets a brand name (and an optional link) on the Team page; public
+`/r/<token>` reports then render that identity and no TGPulse mention anywhere. The public share
+route re-checks the entitlement on every open, so a lapsed Agency plan drops the branding by
+itself; the stored name survives for a later re-upgrade.
 
 ## Enforcement rules
 

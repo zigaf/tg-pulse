@@ -42,6 +42,10 @@ model Workspace {
   name      String
   /** Effective plan; kept in sync with the active subscription. */
   plan      Plan         @default(FREE)
+  /** White-label identity on public client reports (Agency feature); null = TGPulse branding. */
+  brandName String?      @map("brand_name")
+  /** Optional http(s) link behind the brand name on the report bar. */
+  brandUrl  String?      @map("brand_url")
   createdAt DateTime     @default(now()) @map("created_at")
   members   Membership[]
   channels  Channel[]

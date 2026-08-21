@@ -22,6 +22,7 @@ import { QuotaMeter } from '../billing/QuotaBars';
 import { EmptyState, ErrorState, Skeleton, SkeletonRows } from '../shared/States';
 import ui from '../shared/ui.module.css';
 import { UpgradeCard, UpgradeNotice } from '../shared/UpgradeCard';
+import { BrandingCard } from './BrandingCard';
 import { InviteModal } from './InviteModal';
 import { InvitesTable } from './InvitesTable';
 import { MembersTable } from './MembersTable';
@@ -331,6 +332,12 @@ export function TeamView() {
                 onRevokeClick={(id) => void handleRevokeInvite(id)}
               />
             )}
+
+            <div className={styles.sectionHead}>
+              <h2 className={styles.sectionTitle}>Client report branding</h2>
+              <p className={styles.sectionHint}>Public report links carry this identity instead of TGPulse</p>
+            </div>
+            <BrandingCard workspace={workspace} isManager={isManager} />
           </>
         )}
       </section>

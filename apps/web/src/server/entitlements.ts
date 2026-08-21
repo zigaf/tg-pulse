@@ -14,7 +14,7 @@ import { ApiError } from './http';
 export type Limit = number | null;
 export const UNLIMITED = null;
 
-export const PLAN_FEATURES = ['postbacks', 'revenue', 'fraudFull'] as const;
+export const PLAN_FEATURES = ['postbacks', 'revenue', 'fraudFull', 'whiteLabel'] as const;
 export type PlanFeature = (typeof PLAN_FEATURES)[number];
 
 export const QUOTA_KINDS = ['channels', 'linksPerChannel', 'members'] as const;
@@ -34,15 +34,15 @@ export const PLAN_ORDER = [Plan.FREE, Plan.PRO, Plan.AGENCY] as const;
 export const PLANS = {
   FREE: {
     limits: { channels: 1, linksPerChannel: 5, members: 1 },
-    features: { postbacks: false, revenue: false, fraudFull: false },
+    features: { postbacks: false, revenue: false, fraudFull: false, whiteLabel: false },
   },
   PRO: {
     limits: { channels: 3, linksPerChannel: UNLIMITED, members: 5 },
-    features: { postbacks: true, revenue: true, fraudFull: true },
+    features: { postbacks: true, revenue: true, fraudFull: true, whiteLabel: false },
   },
   AGENCY: {
     limits: { channels: 25, linksPerChannel: UNLIMITED, members: 25 },
-    features: { postbacks: true, revenue: true, fraudFull: true },
+    features: { postbacks: true, revenue: true, fraudFull: true, whiteLabel: true },
   },
 } as const satisfies Record<Plan, PlanDefinition>;
 
@@ -68,6 +68,7 @@ const FEATURE_LABELS: Record<PlanFeature, string> = {
   postbacks: 'The postbacks module',
   revenue: 'The revenue module',
   fraudFull: 'Full fraud reporting',
+  whiteLabel: 'White-label client reports',
 };
 
 const QUOTA_NOUNS: Record<QuotaKind, { one: string; many: string }> = {

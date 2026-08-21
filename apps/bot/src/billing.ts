@@ -23,6 +23,8 @@ export interface PlanFeatures {
   revenue: boolean;
   /** FREE sees the full fraud report for the newest link only. */
   fraudFull: boolean;
+  /** Agency-only: public client reports carry the workspace brand instead of TGPulse. */
+  whiteLabel: boolean;
 }
 
 export interface PlanDefinition {
@@ -50,21 +52,21 @@ export const PLANS: Record<Plan, PlanDefinition> = {
     priceXtr: 0,
     periodDays: 0,
     limits: { channels: 1, linksPerChannel: 5, members: 1 },
-    features: { postbacks: false, revenue: false, fraudFull: false },
+    features: { postbacks: false, revenue: false, fraudFull: false, whiteLabel: false },
   },
   [Plan.PRO]: {
     plan: Plan.PRO,
     priceXtr: 10,
     periodDays: BILLING_PERIOD_DAYS,
     limits: { channels: 3, linksPerChannel: UNLIMITED, members: 5 },
-    features: { postbacks: true, revenue: true, fraudFull: true },
+    features: { postbacks: true, revenue: true, fraudFull: true, whiteLabel: false },
   },
   [Plan.AGENCY]: {
     plan: Plan.AGENCY,
     priceXtr: 4000,
     periodDays: BILLING_PERIOD_DAYS,
     limits: { channels: 25, linksPerChannel: UNLIMITED, members: 25 },
-    features: { postbacks: true, revenue: true, fraudFull: true },
+    features: { postbacks: true, revenue: true, fraudFull: true, whiteLabel: true },
   },
 };
 

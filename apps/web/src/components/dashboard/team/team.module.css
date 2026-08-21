@@ -312,6 +312,44 @@
   composes: modalFoot from '../links/links.module.css';
 }
 
+/* ---------- report branding ---------- */
+
+.brandingCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.1rem 1.2rem;
+}
+
+.brandingFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.9rem;
+}
+
+.brandingField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.brandingHint {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+}
+
+.brandingActions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.brandingSaved {
+  font-size: 0.72rem;
+  color: var(--color-positive);
+}
+
 .formError {
   composes: formError from '../links/links.module.css';
 }

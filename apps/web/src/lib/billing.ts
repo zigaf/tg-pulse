@@ -48,7 +48,7 @@ export const PLAN_CATALOG: Record<Plan, PlanCatalogEntry> = {
     priceHint: 'forever',
     tagline: 'One channel, full attribution.',
     limits: { channels: 1, linksPerChannel: 5, members: 1 },
-    features: { postbacks: false, revenue: false, fraudFull: false },
+    features: { postbacks: false, revenue: false, fraudFull: false, whiteLabel: false },
   },
   PRO: {
     plan: 'PRO',
@@ -57,7 +57,7 @@ export const PLAN_CATALOG: Record<Plan, PlanCatalogEntry> = {
     priceHint: 'about $0.20 per 30 days',
     tagline: 'For buyers running paid traffic every week.',
     limits: { channels: 3, linksPerChannel: null, members: 5 },
-    features: { postbacks: true, revenue: true, fraudFull: true },
+    features: { postbacks: true, revenue: true, fraudFull: true, whiteLabel: false },
   },
   AGENCY: {
     plan: 'AGENCY',
@@ -66,7 +66,7 @@ export const PLAN_CATALOG: Record<Plan, PlanCatalogEntry> = {
     priceHint: 'about $79 per 30 days',
     tagline: 'For teams running many client channels.',
     limits: { channels: 25, linksPerChannel: null, members: 25 },
-    features: { postbacks: true, revenue: true, fraudFull: true },
+    features: { postbacks: true, revenue: true, fraudFull: true, whiteLabel: true },
   },
 };
 
@@ -120,6 +120,7 @@ export function planFeatureRows(limits: PlanLimits, features: PlanFeatures): Pla
     { label: 'Conversion postbacks', included: features.postbacks === true },
     { label: 'Revenue and ROMI module', included: features.revenue === true },
     { label: 'Full fraud reports', included: features.fraudFull === true },
+    { label: 'White-label client reports', included: features.whiteLabel === true },
   ];
 }
 
@@ -148,7 +149,7 @@ export function normalizeBilling(data: BillingData): BillingData {
 
 /* ---------- gates ---------- */
 
-export type GatedFeature = 'postbacks' | 'revenue' | 'fraudFull';
+export type GatedFeature = 'postbacks' | 'revenue' | 'fraudFull' | 'whiteLabel';
 
 /**
  * Client-side hint only: the API is the authority and answers 402 on a real gate hit.

@@ -16,7 +16,33 @@ type Phase = 'loading' | 'ready' | 'gone' | 'error';
 const GONE = 410;
 const NOT_FOUND = 404;
 
-function ReportBar() {
+type ReportBrand = { name: string; url: string | null };
+
+/**
+ * Top bar: the agency's own identity when white-label is configured (no TGPulse
+ * mention anywhere on the page then), our wordmark with a CTA otherwise.
+ */
+function ReportBar({ brand, isLoading }: { brand: ReportBrand | null; isLoading: boolean }) {
+  // While the report loads the branding is unknown; an empty bar avoids flashing
+  // the TGPulse wordmark on what may turn out to be a white-label page.
+  if (isLoading) {
+    return <header className={styles.bar} aria-hidden="true" />;
+  }
+  if (brand) {
+    return (
+      <header className={styles.bar}>
+        {brand.url ? (
+          <a href={brand.url} className={styles.wordmark} rel="noopener noreferrer">
+            {brand.name}
+          </a>
+        ) : (
+          <span className={styles.wordmark}>{brand.name}</span>
+        )}
+        <span className={styles.barNote}>Channel report</span>
+      </header>
+    );
+  }
+
   return (
     <header className={styles.bar}>
       <span className={styles.wordmark}>
@@ -83,10 +109,11 @@ export function PublicReport({ token }: { token: string }) {
   }, [load]);
 
   const hasActivity = data ? data.series.some((point) => point.joins > 0 || point.leaves > 0) : false;
+  const brand = data?.brand ?? null;
 
   return (
     <div className={styles.page}>
-      <ReportBar />
+      <ReportBar brand={brand} isLoading={phase === 'loading'} />
 
       <main className={styles.main}>
         {phase === 'gone' ? (
@@ -147,10 +174,12 @@ export function PublicReport({ token }: { token: string }) {
 
             <footer className={styles.foot}>
               <span>Read-only report. Subscriber identities and revenue stay private.</span>
-              <Link href="/" className={styles.footLink}>
-                Track your own channel with TGPulse
-                <ArrowRight size={12} weight="bold" />
-              </Link>
+              {brand ? null : (
+                <Link href="/" className={styles.footLink}>
+                  Track your own channel with TGPulse
+                  <ArrowRight size={12} weight="bold" />
+                </Link>
+              )}
             </footer>
           </>
         )}

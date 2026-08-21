@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { buildChannelReport } from '@/server/analytics';
 import { handleRouteError, jsonOk } from '@/server/http';
 import { clientIp, enforceRateLimit } from '@/server/rate-limit';
-import { recordShareView, resolvePublicShareLink } from '@/server/share-links';
+import { recordShareView, resolvePublicShareLink, resolveReportBrand } from '@/server/share-links';
 
 export const runtime = 'nodejs';
 
@@ -25,13 +25,18 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
     enforceRateLimit(`share:${clientIp(req)}`, RATE_LIMIT, RATE_WINDOW_MS);
     const share = await resolvePublicShareLink(token);
 
-    const report = await buildChannelReport(share.channel.id, share.windowDays);
+    const [report, brand] = await Promise.all([
+      buildChannelReport(share.channel.id, share.windowDays),
+      resolveReportBrand(share.workspaceId),
+    ]);
 
     // Counting a view must never delay or break the report.
     recordShareView(share.id);
 
     return jsonOk({
       channel: { title: share.channel.title, username: share.channel.username },
+      // Agency white-label: the report page renders this identity instead of TGPulse.
+      brand,
       label: share.label,
       windowDays: share.windowDays,
       generatedAt: new Date(),

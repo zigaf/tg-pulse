@@ -52,6 +52,8 @@ payment history and upgrade cards on locked sections.
 
 **Team and sharing.** Workspace invites with one-time links and OWNER/ADMIN/VIEWER roles enforced on every
 mutating route. Public client report at `/r/<token>`: traffic numbers only, revocable, view counted.
+Agency workspaces can white-label these reports: a brand name and optional link set on the Team page
+replace every TGPulse mention on the public page, and the entitlement is re-checked on each open.
 CSV exports for subscribers, links and events. Buyer tag on links with a comparison table.
 
 **Bot link tooling.** `/bulklinks` turns a pasted list of placements into links plus a CSV for the ad
@@ -69,10 +71,10 @@ quota math. `/admin grant|revoke` support commands gated by `ADMIN_TG_IDS`. Pro 
 ## Known gaps / next
 
 1. Content module: post performance, ER, new vs returning cohorts (Prizma parity).
-2. White-label on client reports, the real reason to buy Agency.
-3. Card payments (Lemon Squeezy) for buyers who do not want Stars; the provider enum is already in place.
-4. Stars payments are untested against a real charge: run one live Pro purchase and verify the receipt,
+2. Card payments (Lemon Squeezy) for buyers who do not want Stars; the provider enum is already in place.
+3. Stars payments are untested against a real charge: run one live Pro purchase and verify the receipt,
    the subscription period and the renewal update.
-5. Overview aggregates events in JS per request; move to SQL grouping or cache before ~5-10k events/channel.
-6. Shared `createTrackedLink` helper: slug and invite-link rules are implemented twice (web + bot).
-7. Rate limits are per process and in memory; they will need a shared store if the web app scales out.
+4. Overview aggregates events in JS per request; move to SQL grouping or cache before ~5-10k events/channel.
+5. Shared `createTrackedLink` helper: slug and invite-link rules are implemented twice (web + bot).
+6. Rate limits are per process and in memory, and `clientIp` trusts the first `X-Forwarded-For` hop
+   without a trusted-proxy allowlist; both need revisiting if the web app scales out.

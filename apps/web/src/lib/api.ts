@@ -54,6 +54,8 @@ export interface PlanFeatures {
   postbacks: boolean;
   revenue: boolean;
   fraudFull: boolean;
+  /** Agency-only: public client reports carry the workspace brand instead of TGPulse. */
+  whiteLabel?: boolean;
   [feature: string]: boolean | undefined;
 }
 
@@ -105,6 +107,9 @@ export interface ApiWorkspace {
   role?: WorkspaceRole;
   /** Absent on older server builds; treat "missing" as "no gate known yet". */
   entitlements?: Entitlements;
+  /** White-label identity for public client reports; null until configured. */
+  brandName?: string | null;
+  brandUrl?: string | null;
   channels: ApiChannel[];
 }
 
@@ -659,6 +664,8 @@ export interface PublicReportSource {
 
 export interface PublicReportData {
   channel: { title: string; username: string | null };
+  /** White-label identity; null or absent renders the default TGPulse bar. */
+  brand?: { name: string; url: string | null } | null;
   label?: string | null;
   windowDays: number;
   generatedAt?: string | null;
@@ -786,6 +793,20 @@ export function updateMemberRole(
 /** The last OWNER can never be removed: the server answers 409. */
 export function removeMember(workspaceId: string, userId: string): Promise<ApiResult<{ userId: string }>> {
   return del<{ userId: string }>(`/api/workspaces/${workspaceId}/members/${userId}`);
+}
+
+export interface WorkspaceBranding {
+  id: string;
+  brandName: string | null;
+  brandUrl: string | null;
+}
+
+/** Empty strings clear the fields; setting a value requires the Agency plan (402 otherwise). */
+export function updateWorkspaceBranding(
+  workspaceId: string,
+  input: { brandName: string; brandUrl: string },
+): Promise<ApiResult<WorkspaceBranding>> {
+  return send<WorkspaceBranding>('PATCH', `/api/workspaces/${workspaceId}/branding`, input);
 }
 
 /* ---------- shared reports ---------- */
