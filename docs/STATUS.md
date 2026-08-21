@@ -20,6 +20,13 @@ yclid/gclid/fbclid/ttclid, persists them across pages and stitches the visitor i
 {ttclid} {tg_user_id}`), fired on join/leave, one retry, delivery status persisted per postback. All
 server-side fetches of user URLs pass an SSRF guard that revalidates every redirect hop.
 
+**Native ad integrations.** Attributed joins are fed back to the ad platforms through a conversion
+outbox: Meta Conversions API (fbclid), Yandex Metrica offline conversions (yclid), TikTok Events
+API 2.0 (ttclid) and Google Data Manager API (gclid, no developer token — the legacy
+UploadClickConversions path closed to new tokens in June 2026). Credentials AES-256-GCM at rest,
+masked hints in the UI, per-connection Test doing a real dry-run call, delivery health per
+integration. See docs/AD-INTEGRATIONS.md.
+
 **Revenue and ROMI.** Channel API keys (sha256 at rest, shown once), `POST /api/ingest/sales` webhook, CSV
 import, and a report joining sources to revenue, purchases, conversion and revenue per join.
 

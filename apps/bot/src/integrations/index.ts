@@ -1,16 +1,18 @@
 import { AdProvider } from '@tgpulse/db';
+import { googleAdapter } from './google';
 import { metaAdapter } from './meta';
 import { tiktokAdapter } from './tiktok';
 import type { AdAdapter } from './types';
 import { yandexAdapter } from './yandex';
 
 /**
- * Adapter registry. Providers without an entry (Google Ads) are stored in the
- * schema already but not deliverable yet; the worker skips them.
+ * Adapter registry. A provider stored in the schema without an entry here is
+ * simply skipped by the worker.
  */
 const ADAPTERS: Partial<Record<AdProvider, AdAdapter>> = {
   [AdProvider.META_CAPI]: metaAdapter,
   [AdProvider.YANDEX_METRIKA]: yandexAdapter,
+  [AdProvider.GOOGLE_ADS]: googleAdapter,
   [AdProvider.TIKTOK_EVENTS]: tiktokAdapter,
 };
 

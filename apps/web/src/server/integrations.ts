@@ -71,9 +71,37 @@ const yandexConfigSchema = z.object({
   goalName: z.string().trim().min(1).max(128),
 });
 
+/** Customer ids arrive as `123-456-7890` as often as not; store them dash-free. */
+const googleAccountId = (label: string) =>
+  z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/-/g, ''))
+    .pipe(z.string().regex(/^\d{1,15}$/, `${label} must be digits only`));
+
+const googleCredentialsSchema = z.object({
+  clientId: z.string().trim().min(8, 'Client id looks too short').max(256),
+  clientSecret: secretToken('Client secret'),
+  refreshToken: secretToken('Refresh token'),
+});
+
+/** Field names must match apps/bot/src/integrations/google.ts: the validators are separate. */
+const googleConfigSchema = z.object({
+  operatingAccountId: googleAccountId('Customer id'),
+  conversionActionId: googleAccountId('Conversion action id'),
+  /** Empty means "direct access": no manager account between the OAuth user and the account. */
+  loginAccountId: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/-/g, ''))
+    .pipe(z.string().regex(/^\d{0,15}$/, 'Manager id must be digits only'))
+    .default(''),
+});
+
 export type MetaConfig = z.infer<typeof metaConfigSchema>;
 export type TikTokConfig = z.infer<typeof tiktokConfigSchema>;
 export type YandexConfig = z.infer<typeof yandexConfigSchema>;
+export type GoogleConfig = z.infer<typeof googleConfigSchema>;
 
 /** Typed reads of a stored `config` column, used by the platform test calls. */
 export function parseMetaConfig(input: unknown): MetaConfig {
@@ -88,17 +116,8 @@ export function parseYandexConfig(input: unknown): YandexConfig {
   return parseOrThrow(yandexConfigSchema, input);
 }
 
-function comingSoonSpec(provider: AdProvider): ProviderSpec {
-  const refuse = (): never => {
-    throw new ApiError(400, `${providerLabel(provider)} is not available yet`);
-  };
-  return {
-    provider,
-    comingSoon: true,
-    secretField: '',
-    parseCredentials: refuse,
-    parseConfig: refuse,
-  };
+export function parseGoogleConfig(input: unknown): GoogleConfig {
+  return parseOrThrow(googleConfigSchema, input);
 }
 
 export const PROVIDER_SPECS: Record<AdProvider, ProviderSpec> = {
@@ -116,7 +135,13 @@ export const PROVIDER_SPECS: Record<AdProvider, ProviderSpec> = {
     parseCredentials: (input) => parseOrThrow(yandexCredentialsSchema, input),
     parseConfig: (input) => parseOrThrow(yandexConfigSchema, input),
   },
-  GOOGLE_ADS: comingSoonSpec('GOOGLE_ADS'),
+  GOOGLE_ADS: {
+    provider: 'GOOGLE_ADS',
+    comingSoon: false,
+    secretField: 'refreshToken',
+    parseCredentials: (input) => parseOrThrow(googleCredentialsSchema, input),
+    parseConfig: (input) => parseOrThrow(googleConfigSchema, input),
+  },
   TIKTOK_EVENTS: {
     provider: 'TIKTOK_EVENTS',
     comingSoon: false,

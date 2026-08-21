@@ -132,13 +132,61 @@ export const AD_PROVIDERS: Record<AdProvider, AdProviderDescriptor> = {
   GOOGLE_ADS: {
     provider: 'GOOGLE_ADS',
     name: 'Google Ads',
-    product: 'Click conversions upload',
+    product: 'Data Manager API',
     clickId: 'gclid',
-    summary: 'Waiting on developer token approval, which takes days on Google side.',
-    comingSoon: true,
-    credentialFields: [],
-    configFields: [],
-    setupSteps: [],
+    summary:
+      'Uploads joins against the Google click id so your campaigns optimize toward subscribers. No developer token needed.',
+    comingSoon: false,
+    // Field names are parsed by apps/bot/src/integrations/google.ts; keep both sides in step.
+    credentialFields: [
+      {
+        name: 'clientId',
+        label: 'OAuth client id',
+        placeholder: '1234567890-abc.apps.googleusercontent.com',
+        hint: 'Google Cloud console, an OAuth client in a project with the Data Manager API enabled.',
+      },
+      {
+        name: 'clientSecret',
+        label: 'OAuth client secret',
+        placeholder: 'GOCSPX-...',
+        hint: 'The secret of the same OAuth client.',
+        secret: true,
+      },
+      {
+        name: 'refreshToken',
+        label: 'Refresh token',
+        placeholder: '1//0g...',
+        hint: 'Issued for a Google user with access to the Ads account, scope https://www.googleapis.com/auth/datamanager.',
+        secret: true,
+      },
+    ],
+    configFields: [
+      {
+        name: 'operatingAccountId',
+        label: 'Google Ads customer id',
+        placeholder: '123-456-7890',
+        hint: 'The account that owns the conversion action. Dashes are fine.',
+      },
+      {
+        name: 'conversionActionId',
+        label: 'Conversion action id',
+        placeholder: '987654321',
+        hint: 'An import conversion action of type "Upload clicks"; the ctId number in its URL.',
+      },
+      {
+        name: 'loginAccountId',
+        label: 'Manager (MCC) id',
+        placeholder: '123-456-7890',
+        optional: true,
+        hint: 'Only if the OAuth user reaches the account through a manager account.',
+      },
+    ],
+    setupSteps: [
+      'In Google Cloud console enable the Data Manager API and create an OAuth client.',
+      'Issue a refresh token for a Google user with access to the Ads account (datamanager scope).',
+      'In Google Ads create an import conversion action of type "Upload clicks" and copy its id.',
+      'Run Test: we send one validate-only upload that is checked but never recorded.',
+    ],
   },
   TIKTOK_EVENTS: {
     provider: 'TIKTOK_EVENTS',

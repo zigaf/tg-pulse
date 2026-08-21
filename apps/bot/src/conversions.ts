@@ -25,6 +25,7 @@ const CLICK_LOOKBACK_MS = 24 * 60 * 60 * 1000;
 const META_CRON = '* * * * *'; // Meta batches are cheap, keep latency low
 const YANDEX_CRON = '*/15 * * * *'; // Metrica needs up to 2h to process anyway
 const TIKTOK_CRON = '*/2 * * * *'; // batches of up to 1000, no need for every minute
+const GOOGLE_CRON = '*/15 * * * *'; // Data Manager ingestion is processed asynchronously anyway
 
 interface LinkRef {
   id: string;
@@ -234,5 +235,6 @@ function scheduleDrain(provider: AdProvider, expression: string): void {
 export function startConversionCrons(): void {
   scheduleDrain(AdProvider.META_CAPI, META_CRON);
   scheduleDrain(AdProvider.YANDEX_METRIKA, YANDEX_CRON);
+  scheduleDrain(AdProvider.GOOGLE_ADS, GOOGLE_CRON);
   scheduleDrain(AdProvider.TIKTOK_EVENTS, TIKTOK_CRON);
 }

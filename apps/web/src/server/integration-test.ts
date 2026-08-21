@@ -3,9 +3,11 @@ import { providerLabel, type AdProvider } from '@/lib/ad-providers';
 import { safeFetch } from './net-guard';
 import {
   decryptCredentials,
+  parseGoogleConfig,
   parseMetaConfig,
   parseTikTokConfig,
   parseYandexConfig,
+  type GoogleConfig,
   type MetaConfig,
   type StringMap,
   type TikTokConfig,
@@ -26,6 +28,8 @@ const META_GRAPH_VERSION = 'v21.0';
 const META_GRAPH_ORIGIN = 'https://graph.facebook.com';
 const YANDEX_METRIKA_ORIGIN = 'https://api-metrika.yandex.net';
 const TIKTOK_ORIGIN = 'https://business-api.tiktok.com';
+const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GOOGLE_DATAMANAGER_ORIGIN = 'https://datamanager.googleapis.com';
 
 export interface IntegrationTestResult {
   ok: boolean;
@@ -235,6 +239,89 @@ async function testYandex(
   };
 }
 
+// ---------- Google ----------
+
+/** API errors arrive as `{ error: { message, status } }`, OAuth ones as `{ error, error_description }`. */
+function googleError(body: string, status: number): string {
+  const parsed = parseJson(body);
+  const error = parsed.error;
+  if (error && typeof error === 'object') {
+    const message = asText(asRecord(error).message);
+    const code = asText(asRecord(error).status);
+    if (message) return code ? `${code}: ${message}` : message;
+  }
+  const oauthError = asText(error);
+  if (oauthError) {
+    const description = asText(parsed.error_description);
+    return description ? `${oauthError}: ${description}` : oauthError;
+  }
+  return `Google answered HTTP ${status}.`;
+}
+
+/**
+ * Two real calls, zero recorded data: the token refresh proves the OAuth client and
+ * refresh token, then a `validateOnly` ingest proves the account, the conversion action
+ * and the permission to upload into it. Mirrors apps/bot/src/integrations/google.ts.
+ */
+async function testGoogle(
+  credentials: StringMap,
+  config: GoogleConfig,
+): Promise<IntegrationTestResult> {
+  const tokenRes = await safeFetch(GOOGLE_OAUTH_TOKEN_URL, TEST_TIMEOUT_MS, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: credentials.clientId,
+      client_secret: credentials.clientSecret,
+      refresh_token: credentials.refreshToken,
+      grant_type: 'refresh_token',
+    }).toString(),
+    readBody: true,
+  });
+  const accessToken = asText(parseJson(tokenRes.body).access_token);
+  if (tokenRes.status !== 200 || !accessToken) {
+    return {
+      ok: false,
+      detail: `Token refresh failed: ${googleError(tokenRes.body, tokenRes.status)}`,
+    };
+  }
+
+  const probe = await safeFetch(`${GOOGLE_DATAMANAGER_ORIGIN}/v1/events:ingest`, TEST_TIMEOUT_MS, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      destinations: [
+        {
+          operatingAccount: { accountType: 'GOOGLE_ADS', accountId: config.operatingAccountId },
+          ...(config.loginAccountId
+            ? { loginAccount: { accountType: 'GOOGLE_ADS', accountId: config.loginAccountId } }
+            : {}),
+          productDestinationId: config.conversionActionId,
+        },
+      ],
+      events: [
+        {
+          adIdentifiers: { gclid: 'tgpulse-connection-test' },
+          eventTimestamp: new Date().toISOString(),
+          transactionId: `tgpulse-test-${config.conversionActionId}`,
+          eventSource: 'WEB',
+        },
+      ],
+      consent: { adUserData: 'CONSENT_GRANTED', adPersonalization: 'CONSENT_GRANTED' },
+      validateOnly: true,
+    }),
+    readBody: true,
+  });
+  if (probe.status !== 200) {
+    return { ok: false, detail: googleError(probe.body, probe.status) };
+  }
+
+  return {
+    ok: true,
+    detail: `Conversion action ${config.conversionActionId} on account ${config.operatingAccountId} accepted a validate-only upload. Nothing was recorded.`,
+  };
+}
+
 // ---------- entry point ----------
 
 /**
@@ -262,6 +349,10 @@ export async function runIntegrationTest(
     if (provider === 'TIKTOK_EVENTS') {
       const config = parseTikTokConfig(integration.config);
       return () => testTikTok(credentials, config);
+    }
+    if (provider === 'GOOGLE_ADS') {
+      const config = parseGoogleConfig(integration.config);
+      return () => testGoogle(credentials, config);
     }
     return null;
   })();

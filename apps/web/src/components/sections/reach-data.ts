@@ -220,12 +220,12 @@ const PLATFORM_SPECS: readonly PlatformSpec[] = [
     provider: 'GOOGLE_ADS',
     kind: 'live',
     live: {
-      status: 'Click conversions',
-      note: 'Offline click conversions by gclid.',
+      status: 'Data Manager API',
+      note: 'Click conversions by gclid. No developer token needed.',
     },
     pending: {
       status: 'Building',
-      note: 'Offline click conversions by gclid. Developer token pending.',
+      note: 'Click conversions by gclid via the Data Manager API.',
     },
   },
   {
