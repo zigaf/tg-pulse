@@ -1,11 +1,16 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { SignJWT, jwtVerify } from 'jose';
-import { getPrisma, type User } from '@tgpulse/db';
+import { getPrisma, Prisma, type User } from '@tgpulse/db';
 import { requireEnv } from './env';
 
 export const SESSION_COOKIE = 'tgp_session';
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
-const LOGIN_MAX_AGE_SECONDS = 60 * 60 * 24; // Telegram auth_date valid for 24h
+/**
+ * Freshness window for the widget's auth_date. The widget signs the payload at
+ * the moment of the click, so 10 minutes is plenty; combined with the one-time
+ * nonce check in the login route this closes replay of intercepted payloads.
+ */
+export const LOGIN_MAX_AGE_SECONDS = 60 * 10;
 
 /** Minimal cookie reader satisfied by both NextRequest.cookies and next/headers cookies(). */
 export interface CookieReader {
@@ -37,6 +42,32 @@ export function verifyTelegramLogin(data: Record<string, string | number>): bool
   const authDate = Number(data.auth_date);
   if (!Number.isFinite(authDate)) return false;
   return Math.floor(Date.now() / 1000) - authDate <= LOGIN_MAX_AGE_SECONDS;
+}
+
+/**
+ * One-time use of a verified login payload: the signed hash is stored under a
+ * primary key, so a second submission of the same payload fails. Returns false
+ * when the hash was already consumed. Old rows are pruned in the background;
+ * anything past the pruned age is rejected by the auth_date check anyway.
+ */
+export async function consumeLoginNonce(hash: string): Promise<boolean> {
+  const prisma = getPrisma();
+  try {
+    await prisma.loginNonce.create({ data: { hash } });
+  } catch (error) {
+    // Unique violation: this exact payload has signed someone in already.
+    // Anything else (a database outage) must surface as a 500, not as "already used".
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return false;
+    }
+    throw error;
+  }
+
+  const pruneBefore = new Date(Date.now() - 2 * LOGIN_MAX_AGE_SECONDS * 1000);
+  void prisma.loginNonce
+    .deleteMany({ where: { createdAt: { lt: pruneBefore } } })
+    .catch(() => undefined);
+  return true;
 }
 
 function sessionKey(): Uint8Array {

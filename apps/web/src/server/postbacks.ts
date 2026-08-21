@@ -103,6 +103,10 @@ export function toPostbackDto(postback: Postback) {
     onJoin: postback.onJoin,
     onLeave: postback.onLeave,
     isActive: postback.isActive,
+    // Last delivery outcome the bot persisted, so failures are visible without reading logs.
+    lastStatus: postback.lastStatus,
+    lastError: postback.lastError,
+    lastFiredAt: postback.lastFiredAt,
     createdAt: postback.createdAt,
   };
 }

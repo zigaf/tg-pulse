@@ -185,6 +185,10 @@ export interface ApiPostback {
   onJoin: boolean;
   onLeave: boolean;
   isActive: boolean;
+  /** HTTP status of the last delivery, null when the request never completed. */
+  lastStatus: number | null;
+  lastError: string | null;
+  lastFiredAt: string | null;
   createdAt: string;
 }
 

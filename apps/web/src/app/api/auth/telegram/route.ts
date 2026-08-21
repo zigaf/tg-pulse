@@ -4,6 +4,7 @@ import { getPrisma } from '@tgpulse/db';
 import {
   SESSION_COOKIE,
   SESSION_MAX_AGE_SECONDS,
+  consumeLoginNonce,
   createSessionJwt,
   sessionCookieOptions,
   toUserDto,
@@ -42,6 +43,11 @@ export async function POST(req: NextRequest) {
     }
     if (!verifyTelegramLogin(signedFields)) {
       return jsonError(401, 'Telegram login verification failed');
+    }
+
+    // A valid payload signs in exactly once; a replayed one is refused.
+    if (!(await consumeLoginNonce(body.hash))) {
+      return jsonError(401, 'This login has already been used. Sign in again.');
     }
 
     const prisma = getPrisma();

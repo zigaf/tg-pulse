@@ -156,6 +156,26 @@
   background: oklch(65% 0.19 25 / 0.1);
 }
 
+/* ---------- last delivery ---------- */
+
+.deliveryCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.deliveryNever {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.deliveryMoment {
+  font-size: 0.66rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
 .testResult {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.66rem;

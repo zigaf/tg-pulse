@@ -17,7 +17,8 @@ click, the pixel visitor id and ad click ids, then forwards to the invite link.
 yclid/gclid/fbclid/ttclid, persists them across pages and stitches the visitor id onto outbound go-links.
 
 **Conversion postbacks.** URL templates with macros (`{event} {slug} {label} {cid} {yclid} {gclid} {fbclid}
-{ttclid} {tg_user_id}`), fired on join/leave, one retry, delivery status persisted per postback. All
+{ttclid} {tg_user_id}`), fired on join/leave, one retry, delivery status persisted per postback and
+shown as a "last delivery" column in the dashboard. All
 server-side fetches of user URLs pass an SSRF guard that revalidates every redirect hop.
 
 **Native ad integrations.** Attributed joins are fed back to the ad platforms through a conversion
@@ -37,8 +38,11 @@ click-to-join conversion) produce a 0-100 score and a verdict, with refund-ready
 checklist, breadcrumbs with back/close on every screen, sparklines and ranked source bars, instant
 join/leave alerts persisted in the database.
 
-**Dashboard.** Telegram login, channel list, overview (tiles, joins/leaves chart, source breakdown), links
-with pixel install, postbacks, subscribers, revenue.
+**Dashboard.** Telegram login (10-minute freshness window plus a one-time nonce, so an intercepted
+payload cannot be replayed), channel list, overview (tiles, joins/leaves chart, source breakdown),
+links with pixel install, postbacks, subscribers, revenue. Every web response carries security
+headers: CSP scoped to the Telegram widget, HSTS, nosniff, frame denial, referrer and permissions
+policies.
 
 **Monetization.** Free/Pro/Agency with workspace-level quotas (see docs/BILLING.md). Payment runs on
 Telegram Stars inside the bot (`/upgrade`, `/billing`): recurring invoice with a one-off fallback,
@@ -64,14 +68,11 @@ quota math. `/admin grant|revoke` support commands gated by `ADMIN_TG_IDS`. Pro 
 
 ## Known gaps / next
 
-1. Shared `createTrackedLink` helper: slug and invite-link rules are implemented twice (web + bot).
-2. Overview aggregates events in JS per request; move to SQL grouping or cache before ~5-10k events/channel.
-3. Postback delivery status is stored but not surfaced in the dashboard yet.
-4. Telegram Login payloads have no replay protection beyond the 24h `auth_date` window.
-5. No security headers on the web app (CSP, HSTS, nosniff, referrer policy).
-8. Content module: post performance, ER, new vs returning cohorts (Prizma parity).
-9. White-label on client reports, the real reason to buy Agency.
-10. Rate limits are per process and in memory; they will need a shared store if the web app scales out.
-6. Card payments (Lemon Squeezy) for buyers who do not want Stars; the provider enum is already in place.
-7. Stars payments are untested against a real charge: run one live Pro purchase and verify the receipt,
+1. Content module: post performance, ER, new vs returning cohorts (Prizma parity).
+2. White-label on client reports, the real reason to buy Agency.
+3. Card payments (Lemon Squeezy) for buyers who do not want Stars; the provider enum is already in place.
+4. Stars payments are untested against a real charge: run one live Pro purchase and verify the receipt,
    the subscription period and the renewal update.
+5. Overview aggregates events in JS per request; move to SQL grouping or cache before ~5-10k events/channel.
+6. Shared `createTrackedLink` helper: slug and invite-link rules are implemented twice (web + bot).
+7. Rate limits are per process and in memory; they will need a shared store if the web app scales out.

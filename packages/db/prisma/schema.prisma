@@ -23,6 +23,20 @@ model User {
   @@map("users")
 }
 
+/**
+ * Telegram Login payload hashes already consumed once. The hash covers the whole
+ * signed payload (including auth_date), so replaying an intercepted login within
+ * the freshness window hits the primary key and is rejected. Rows older than the
+ * window are dead weight and are pruned opportunistically on login.
+ */
+model LoginNonce {
+  hash      String   @id
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("login_nonces")
+}
+
 model Workspace {
   id        String       @id @default(cuid())
   name      String

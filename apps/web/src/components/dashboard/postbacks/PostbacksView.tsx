@@ -18,7 +18,7 @@ import { useFeatureLocked, useIsViewer, useWorkspace } from '../shell/workspace-
 import { AddPostbackModal } from './AddPostbackModal';
 import styles from './postbacks.module.css';
 
-const TABLE_STYLE = { '--cols': '1fr 1.8fr 0.75fr 0.45fr 1.3fr', '--min-width': '820px' } as CSSProperties;
+const TABLE_STYLE = { '--cols': '1fr 1.6fr 0.7fr 0.45fr 0.95fr 1.3fr', '--min-width': '960px' } as CSSProperties;
 const CONFIRM_RESET_MS = 3000;
 
 const UPGRADE_TITLE = 'Postbacks are part of Pro';
@@ -26,6 +26,39 @@ const UPGRADE_BODY =
   'Send every join and leave straight into your ad platform or tracker, so conversions land in the right campaign instead of a spreadsheet.';
 
 type TestResult = { pending: true } | { pending: false; status?: number; error?: string };
+
+function formatMoment(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(undefined, {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/**
+ * Outcome of the last real delivery the bot fired, persisted on the postback.
+ * Distinct from the Test button, which shows the result of an on-demand probe.
+ */
+function LastDelivery({ postback }: { postback: ApiPostback }) {
+  if (!postback.lastFiredAt) {
+    return <span className={styles.deliveryNever}>never fired</span>;
+  }
+
+  const isOk =
+    postback.lastStatus !== null && postback.lastStatus >= 200 && postback.lastStatus < 400;
+  const label =
+    postback.lastStatus !== null ? `HTTP ${postback.lastStatus}` : (postback.lastError ?? 'failed');
+
+  return (
+    <span className={styles.deliveryCell} title={postback.lastError ?? undefined}>
+      <span className={`${styles.testResult} ${isOk ? styles.testOk : styles.testFail}`}>{label}</span>
+      <span className={styles.deliveryMoment}>{formatMoment(postback.lastFiredAt)}</span>
+    </span>
+  );
+}
 
 function TestResultLabel({ result }: { result: TestResult }) {
   if (result.pending) return <span className={styles.testResult}>…</span>;
@@ -86,6 +119,7 @@ function PostbackRow({
           disabled={isToggling || !canMutate}
         />
       </span>
+      <LastDelivery postback={postback} />
       <span className={styles.actionsCell}>
         {testResult ? <TestResultLabel result={testResult} /> : null}
         {canMutate ? (
@@ -267,6 +301,7 @@ export function PostbacksView({ channelId }: { channelId: string }) {
               <span>template</span>
               <span>events</span>
               <span>active</span>
+              <span>last delivery</span>
               <span className={table.alignRight}>actions</span>
             </div>
             {postbacks.map((postback) => (
