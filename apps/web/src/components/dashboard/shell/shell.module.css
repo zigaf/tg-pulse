@@ -372,9 +372,12 @@
     padding: 0;
   }
 
-  /* Second row: edge-to-edge tab strip; the fade says there is more to the right. */
+  /* Second row: edge-to-edge tab strip; the fade says there is more to the right.
+     The basis includes the negative side margins: flex line breaking uses the outer
+     size, and a plain 100% minus 1.5rem of margin would fit next to the (shrinkable)
+     identity block whenever the sign-out button is absent, as inside Telegram. */
   .nav {
-    flex: 1 1 100%;
+    flex: 1 1 calc(100% + 1.5rem);
     order: 10;
     gap: 0.1rem;
     margin: 0 -0.75rem;
