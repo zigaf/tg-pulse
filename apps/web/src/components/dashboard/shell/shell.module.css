@@ -267,6 +267,24 @@
     display: none;
   }
 
+  /* Mouse users get a thin scrollbar on hover: the strip has no touch to drag it. */
+  @media (hover: hover) and (pointer: fine) {
+    .nav:hover {
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-border-strong) transparent;
+    }
+
+    .nav:hover::-webkit-scrollbar {
+      display: block;
+      height: 4px;
+    }
+
+    .nav:hover::-webkit-scrollbar-thumb {
+      background: var(--color-border-strong);
+      border-radius: 2px;
+    }
+  }
+
   .navItem {
     padding: 0.45rem 0.65rem;
     white-space: nowrap;

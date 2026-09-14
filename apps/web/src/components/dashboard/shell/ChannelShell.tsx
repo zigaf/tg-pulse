@@ -15,7 +15,7 @@ import {
 } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   getMe,
   getMembers,
@@ -31,6 +31,7 @@ import { Skeleton } from '../shared/States';
 import { billingHref } from '../shared/UpgradeCard';
 import { teamHref } from '../team/team-href';
 import { useIsMiniApp } from './MiniAppBridge';
+import { useTabStrip } from './use-tab-strip';
 import { WorkspaceProvider } from './workspace-context';
 import styles from './shell.module.css';
 
@@ -60,6 +61,8 @@ export function ChannelShell({ channelId, children }: { channelId: string; child
   const [workspace, setWorkspace] = useState<ApiWorkspace | null>(null);
   const [role, setRole] = useState<WorkspaceRole | null>(null);
   const isTma = useIsMiniApp();
+  const navRef = useRef<HTMLElement>(null);
+  useTabStrip(navRef, pathname ?? '');
 
   useEffect(() => {
     let cancelled = false;
@@ -142,7 +145,7 @@ export function ChannelShell({ channelId, children }: { channelId: string; child
           ) : null}
         </div>
 
-        <nav className={styles.nav} aria-label="Channel navigation">
+        <nav ref={navRef} className={styles.nav} aria-label="Channel navigation">
           {NAV_ITEMS.map(({ segment, label, icon: Icon, exact, feature }) => {
             const href = `${base}${segment}`;
             const isLocked = feature !== undefined && isFeatureLocked(workspace?.entitlements, feature);
