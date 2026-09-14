@@ -1,5 +1,6 @@
 import type { Bot } from 'grammy';
 import type { BotContext } from '../context';
+import { setMenuButton } from '../menu-button';
 import { startMenu } from '../menus';
 import { getOnboardingProgress } from '../queries';
 import { startCard } from '../views/home-view';
@@ -24,5 +25,8 @@ export function registerStart(bot: Bot<BotContext>): void {
       reply_markup: startMenu(ctx.dict, ctx.me.username, progress),
       link_preview_options: { is_disabled: true },
     });
+
+    // Localised menu button for this chat; the reply above is not held back by it.
+    await setMenuButton(ctx.api, ctx.dict, ctx.from.id);
   });
 }

@@ -346,3 +346,109 @@
     justify-content: space-between;
   }
 }
+
+/* ---------- phones: bottom sheets, finger-sized row controls ---------- */
+
+@media (max-width: 640px) {
+  .headActions > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .headActions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .copyBtn {
+    width: 40px;
+    height: 40px;
+    border-color: var(--color-border);
+  }
+
+  .url {
+    flex: 1 1 0;
+  }
+
+  .revokeBtn,
+  .pixelBtn {
+    min-height: 40px;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .landingCell {
+    text-align: left;
+  }
+
+  /* Modals anchor to the bottom edge and may take the whole viewport. */
+  .overlay {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: none;
+    max-height: 100dvh;
+    min-height: 58dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 22px 22px 0 0;
+    border-bottom: none;
+    padding: 0.6rem 1.1rem 0;
+    box-shadow:
+      0 -24px 60px oklch(6% 0.02 290 / 0.6),
+      inset 0 1px 0 oklch(100% 0 0 / 0.07);
+  }
+
+  .modal::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    margin: 0 auto 1rem;
+    background: oklch(45% 0.04 290 / 0.55);
+  }
+
+  /* Bottom breathing room lives here so a sticky footer can sit flush on the edge. */
+  .modal::after {
+    content: '';
+    display: block;
+    height: calc(1rem + env(safe-area-inset-bottom));
+  }
+
+  .modalHead {
+    margin-bottom: 1rem;
+  }
+
+  .modalClose {
+    width: 40px;
+    height: 40px;
+    margin-right: -0.5rem;
+  }
+
+  .disclosure {
+    min-height: 40px;
+  }
+
+  /* Actions stay reachable while the form scrolls underneath. */
+  .modalFoot {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin: 0.4rem -1.1rem 0;
+    padding: 0.75rem 1.1rem calc(0.9rem + env(safe-area-inset-bottom));
+    background: oklch(15% 0.018 290 / 0.98);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .modalFoot button {
+    flex: 1 1 0;
+    justify-content: center;
+    min-height: 44px;
+  }
+}

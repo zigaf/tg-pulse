@@ -167,3 +167,23 @@
     grid-column: 1;
   }
 }
+
+@media (max-width: 640px) {
+  /* The badge stays small; its hit area grows to a finger. */
+  .planBadge {
+    position: relative;
+  }
+
+  .planBadge::before {
+    content: '';
+    position: absolute;
+    inset: -9px -6px;
+  }
+
+  .noticeLink,
+  .footHint {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+  }
+}

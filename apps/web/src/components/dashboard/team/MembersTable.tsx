@@ -49,7 +49,7 @@ export function MembersTable({
 }: MembersTableProps) {
   return (
     <div className={table.scroll}>
-      <div className={table.table} style={TABLE_STYLE}>
+      <div className={`${table.table} ${table.stack}`} style={TABLE_STYLE}>
         <div className={table.headRow}>
           <span>member</span>
           <span>role</span>
@@ -67,7 +67,7 @@ export function MembersTable({
 
           return (
             <div key={member.userId} className={`${table.row} ${table.rowHover}`}>
-              <span className={styles.memberCell}>
+              <span className={styles.memberCell} data-cell="main">
                 <span className={styles.avatar} aria-hidden="true">
                   {name.slice(0, 1).toUpperCase()}
                 </span>
@@ -80,7 +80,7 @@ export function MembersTable({
                 </span>
               </span>
 
-              <span className={styles.roleCell}>
+              <span className={styles.roleCell} data-label="role">
                 {canEditSeat ? (
                   <select
                     className={styles.roleSelect}
@@ -106,9 +106,11 @@ export function MembersTable({
                 )}
               </span>
 
-              <span className={table.num}>{formatFullDate(member.joinedAt)}</span>
+              <span className={table.num} data-label="joined">
+                {formatFullDate(member.joinedAt)}
+              </span>
 
-              <span className={styles.actionsCell}>
+              <span className={styles.actionsCell} data-cell="actions">
                 {canEditSeat && !isSelf ? (
                   <button
                     type="button"

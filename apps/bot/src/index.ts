@@ -16,6 +16,7 @@ import { registerLanguage } from './commands/language';
 import { registerNavigation } from './commands/navigation';
 import { registerNewlink } from './commands/newlink';
 import { registerNotifications } from './commands/notifications';
+import { registerSettings } from './commands/settings';
 import { registerStart } from './commands/start';
 import { registerStats } from './commands/stats';
 import { registerUpgrade } from './commands/upgrade';
@@ -24,6 +25,7 @@ import { startConversionCrons } from './conversions';
 import { isEncryptionConfigured } from './crypto';
 import { registerFallback } from './fallback';
 import { getDict, type Dict, type Lang } from './i18n';
+import { setMenuButton } from './menu-button';
 import { registerPixel } from './pixel';
 import { registerPostTracking } from './posts';
 import { registerReports, startReportCron } from './reports';
@@ -41,6 +43,7 @@ registerNewlink(bot);
 registerBulklinks(bot);
 registerUpgrade(bot);
 registerBilling(bot);
+registerSettings(bot);
 registerAdmin(bot);
 registerReports(bot);
 registerPostTracking(bot);
@@ -149,6 +152,7 @@ function commandList(dict: Dict): { command: string; description: string }[] {
     { command: 'notifications', description: dict.commands.notifications },
     { command: 'upgrade', description: dict.commands.upgrade },
     { command: 'billing', description: dict.commands.billing },
+    { command: 'settings', description: dict.commands.settings },
     { command: 'language', description: dict.commands.language },
     { command: 'help', description: dict.commands.help },
   ];
@@ -192,6 +196,10 @@ async function main() {
   // Telegram keeps one command list per language_code, so both locales are published.
   await bot.api.setMyCommands(commandList(getDict('en')));
   await bot.api.setMyCommands(commandList(getDict('ru')), { language_code: RUSSIAN_CODE });
+
+  // Global default for the chat menu button; /start and /language localise it per chat.
+  // The helper swallows API failures, so a Telegram hiccup here cannot block startup.
+  await setMenuButton(bot.api, getDict('en'));
 
   if (config.webhookSecret && config.publicUrl) {
     await bot.api.setWebhook(`${config.publicUrl}/webhook/${config.webhookSecret}`, {

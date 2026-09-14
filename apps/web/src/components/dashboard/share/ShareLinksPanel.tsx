@@ -118,7 +118,7 @@ export function ShareLinksPanel({
 
       {links.length > 0 ? (
         <div className={table.scroll}>
-          <div className={table.table} style={TABLE_STYLE}>
+          <div className={`${table.table} ${table.stack}`} style={TABLE_STYLE}>
             <div className={table.headRow}>
               <span>report</span>
               <span className={table.alignRight}>window</span>
@@ -131,16 +131,22 @@ export function ShareLinksPanel({
               const dead = isDead(link);
               return (
                 <div key={link.id} className={`${table.row} ${table.rowHover} ${dead ? styles.rowDead : ''}`}>
-                  <span className={styles.labelCell}>
+                  <span className={styles.labelCell} data-cell="main">
                     <span className={table.cellTitle}>{link.label || 'Client report'}</span>
                     <span className={table.cellSub}>
                       {link.expiresAt ? `expires ${formatFullDate(link.expiresAt)}` : 'no expiry'}
                     </span>
                   </span>
-                  <span className={`${table.num} ${styles.window}`}>{link.windowDays}d</span>
-                  <span className={table.numStrong}>{formatNumber(link.viewCount)}</span>
-                  <span className={table.num}>{formatFullDate(link.createdAt)}</span>
-                  <span className={styles.actionsCell}>
+                  <span className={`${table.num} ${styles.window}`} data-label="window" data-cell="third">
+                    {link.windowDays}d
+                  </span>
+                  <span className={table.numStrong} data-label="views" data-cell="third">
+                    {formatNumber(link.viewCount)}
+                  </span>
+                  <span className={table.num} data-label="created" data-cell="third">
+                    {formatFullDate(link.createdAt)}
+                  </span>
+                  <span className={styles.actionsCell} data-cell="actions">
                     {link.revokedAt ? (
                       <span className={ui.badgeNegative}>revoked</span>
                     ) : (

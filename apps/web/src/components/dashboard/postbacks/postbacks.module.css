@@ -259,3 +259,79 @@
   height: 15px;
   cursor: pointer;
 }
+
+/* ---------- phones ---------- */
+
+@media (max-width: 640px) {
+  .pageHead {
+    flex-wrap: wrap;
+  }
+
+  .pageHead button {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  /* Stacked card: the template is worth reading in full. */
+  .templateCell {
+    white-space: normal;
+    word-break: break-all;
+    line-height: 1.45;
+  }
+
+  .toggle {
+    width: 44px;
+    height: 26px;
+  }
+
+  /* Invisible hit area around the switch: 60 x 42 without changing its look. */
+  .toggle::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+  }
+
+  .toggle::after {
+    width: 20px;
+    height: 20px;
+  }
+
+  .toggleOn::after {
+    transform: translateX(18px);
+  }
+
+  .actionBtn {
+    min-height: 40px;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .deliveryMoment {
+    font-size: 0.72rem;
+  }
+
+  .templateInput {
+    font-size: 1rem;
+    min-height: 108px;
+  }
+
+  .macroChip {
+    min-height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.72rem;
+  }
+
+  .checkRow {
+    flex-wrap: wrap;
+    gap: 0.4rem 1.2rem;
+  }
+
+  .check {
+    min-height: 44px;
+  }
+
+  .check input {
+    width: 20px;
+    height: 20px;
+  }
+}

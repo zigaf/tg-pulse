@@ -208,3 +208,23 @@
   color: var(--color-negative);
   margin-top: 0.6rem;
 }
+
+/* ---------- phones ---------- */
+
+@media (max-width: 640px) {
+  .choice {
+    min-height: 40px;
+    padding: 0.45rem 1rem;
+    font-size: 0.82rem;
+  }
+
+  .rowBtn {
+    min-height: 40px;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .window {
+    text-align: left;
+  }
+}

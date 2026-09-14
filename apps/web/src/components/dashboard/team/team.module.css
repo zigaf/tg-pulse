@@ -456,3 +456,58 @@
     font-size: 1.4rem;
   }
 }
+
+/* ---------- phones ---------- */
+
+@media (max-width: 640px) {
+  .topbar {
+    margin-bottom: 1.5rem;
+  }
+
+  .backLink {
+    min-height: 40px;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .headingRow > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sectionHead {
+    margin-top: 1.8rem;
+  }
+
+  .roleSelect {
+    min-height: 40px;
+    max-width: none;
+    font-size: 1rem;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .rowBtn {
+    min-height: 40px;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .expiry {
+    text-align: left;
+  }
+
+  .brandingActions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .roleOption {
+    min-height: 48px;
+    padding: 0.8rem 0.9rem;
+  }
+
+  .roleOption input {
+    width: 20px;
+    height: 20px;
+    margin-top: 0.1rem;
+  }
+}

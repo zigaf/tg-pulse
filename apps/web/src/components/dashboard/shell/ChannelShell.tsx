@@ -30,6 +30,7 @@ import { PlanBadge } from '../shared/PlanBadge';
 import { Skeleton } from '../shared/States';
 import { billingHref } from '../shared/UpgradeCard';
 import { teamHref } from '../team/team-href';
+import { useIsMiniApp } from './MiniAppBridge';
 import { WorkspaceProvider } from './workspace-context';
 import styles from './shell.module.css';
 
@@ -58,6 +59,7 @@ export function ChannelShell({ channelId, children }: { channelId: string; child
   const [channel, setChannel] = useState<ApiChannel | null>(null);
   const [workspace, setWorkspace] = useState<ApiWorkspace | null>(null);
   const [role, setRole] = useState<WorkspaceRole | null>(null);
+  const isTma = useIsMiniApp();
 
   useEffect(() => {
     let cancelled = false;
@@ -182,10 +184,13 @@ export function ChannelShell({ channelId, children }: { channelId: string; child
           </Link>
         </nav>
 
-        <button type="button" className={styles.signOut} onClick={() => void handleSignOut()}>
-          <SignOut size={16} />
-          <span>Sign out</span>
-        </button>
+        {/* Telegram vouches for the user inside a Mini App, so there is no session to end. */}
+        {isTma ? null : (
+          <button type="button" className={styles.signOut} onClick={() => void handleSignOut()}>
+            <SignOut size={16} />
+            <span>Sign out</span>
+          </button>
+        )}
       </aside>
 
       <div className={styles.content}>

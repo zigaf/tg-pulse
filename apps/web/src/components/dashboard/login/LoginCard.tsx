@@ -3,6 +3,8 @@
 import { CircleNotch, Pulse } from '@phosphor-icons/react';
 import { useState, type ReactNode } from 'react';
 import { authTelegram, type TelegramAuthPayload } from '@/lib/api';
+import { useIsMiniApp } from '../shell/MiniAppBridge';
+import { MiniAppSignIn } from './MiniAppSignIn';
 import { TelegramLoginWidget } from './TelegramLoginWidget';
 import styles from './login.module.css';
 
@@ -22,6 +24,7 @@ interface LoginCardProps {
 export function LoginCard({ title = 'Sign in to TGPulse', subtitle, onSignedIn }: LoginCardProps = {}) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
+  const isTma = useIsMiniApp();
 
   const handleAuth = async (payload: TelegramAuthPayload) => {
     setPhase('pending');
@@ -35,6 +38,12 @@ export function LoginCard({ title = 'Sign in to TGPulse', subtitle, onSignedIn }
     setError(result.error);
     setPhase('error');
   };
+
+  // Inside Telegram the Login Widget makes no sense (and its iframe is blocked by the
+  // Mini App CSP): initData already identifies the user, so exchange it instead.
+  if (isTma) {
+    return <MiniAppSignIn onSignedIn={onSignedIn ?? (() => window.location.reload())} />;
+  }
 
   return (
     <main className={styles.screen}>

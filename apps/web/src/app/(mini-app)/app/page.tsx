@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ChannelsHome } from '@/components/dashboard/channels/ChannelsHome';
 import { LoginCard } from '@/components/dashboard/login/LoginCard';
+import { MiniAppSignIn } from '@/components/dashboard/login/MiniAppSignIn';
 import { ErrorState, Skeleton } from '@/components/dashboard/shared/States';
+import { useIsMiniApp } from '@/components/dashboard/shell/MiniAppBridge';
 import ui from '@/components/dashboard/shared/ui.module.css';
 import { getMe, type MeData } from '@/lib/api';
 
@@ -36,6 +38,10 @@ export default function AppRootPage() {
   const [phase, setPhase] = useState<Phase>('loading');
   const [me, setMe] = useState<MeData | null>(null);
   const [error, setError] = useState('');
+  const isTma = useIsMiniApp();
+  // One reload after a successful initData exchange is enough: request() already retries
+  // a 401 with a fresh token, so a second 401 here means the session is really rejected.
+  const [hasTmaReloaded, setHasTmaReloaded] = useState(false);
 
   const load = useCallback(async () => {
     setPhase('loading');
@@ -58,7 +64,18 @@ export default function AppRootPage() {
   }, [load]);
 
   if (phase === 'loading') return <LoadingScreen />;
-  if (phase === 'login') return <LoginCard />;
+  if (phase === 'login') {
+    if (!isTma) return <LoginCard />;
+    return (
+      <MiniAppSignIn
+        exhausted={hasTmaReloaded}
+        onSignedIn={() => {
+          setHasTmaReloaded(true);
+          void load();
+        }}
+      />
+    );
+  }
   if (phase === 'error') {
     return (
       <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '1.5rem' }}>

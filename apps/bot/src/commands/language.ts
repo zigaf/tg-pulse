@@ -2,6 +2,7 @@ import type { Bot } from 'grammy';
 import type { BotContext } from '../context';
 import { getDict, type Lang } from '../i18n';
 import { setUserLang } from '../i18n/user-lang';
+import { setMenuButton } from '../menu-button';
 import { CB, languageMenu } from '../menus';
 import { safeEdit } from '../ui';
 import { languageCard, languageChangedCard } from '../views/home-view';
@@ -29,5 +30,8 @@ export function registerLanguage(bot: Bot<BotContext>): void {
     const dict = getDict(lang);
     await ctx.answerCallbackQuery();
     await safeEdit(ctx, languageChangedCard(dict, lang), languageMenu(dict, lang));
+
+    // The menu button text follows the language too.
+    await setMenuButton(ctx.api, dict, ctx.from.id);
   });
 }

@@ -49,7 +49,7 @@ export function InvitesTable({
 
   return (
     <div className={table.scroll}>
-      <div className={table.table} style={TABLE_STYLE}>
+      <div className={`${table.table} ${table.stack}`} style={TABLE_STYLE}>
         <div className={table.headRow}>
           <span>role</span>
           <span className={table.alignRight}>expires</span>
@@ -64,15 +64,15 @@ export function InvitesTable({
 
           return (
             <div key={invite.id} className={`${table.row} ${table.rowHover}`}>
-              <span className={styles.roleCell}>
+              <span className={styles.roleCell} data-label="role">
                 <span className={styles.roleStatic}>{ROLE_LABELS[invite.role]}</span>
               </span>
 
-              <span className={`${styles.expiry} ${expired ? styles.expired : ''}`}>
+              <span className={`${styles.expiry} ${expired ? styles.expired : ''}`} data-label="expires">
                 {expired ? 'expired' : formatFullDate(invite.expiresAt)}
               </span>
 
-              <span className={styles.actionsCell}>
+              <span className={styles.actionsCell} data-cell="actions">
                 {url ? (
                   <button type="button" className={styles.rowBtn} onClick={() => void handleCopy(invite)}>
                     {copiedId === invite.id ? 'Copied' : 'Copy link'}

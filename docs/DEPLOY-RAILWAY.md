@@ -17,6 +17,7 @@
 - `BOT_TOKEN` — токен от @BotFather
 - `PUBLIC_URL` — публичный домен сервиса bot (Railway → Settings → Networking → Generate Domain)
 - `WEBHOOK_SECRET` — случайная строка (`openssl rand -hex 24`); при её наличии бот сам ставит вебхук на старте
+- `DASHBOARD_URL` — публичный адрес дашборда, например `https://<web-домен>/app`. Обязательно https: тогда бот открывает дашборд как Mini App (кнопка меню чата, `/settings`, кнопки на карточках канала); при http кнопки становятся обычными ссылками, а кнопка меню не ставится
 
 ## Миграции
 

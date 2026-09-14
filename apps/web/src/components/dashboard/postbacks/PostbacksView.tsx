@@ -44,7 +44,11 @@ function formatMoment(value: string): string {
  */
 function LastDelivery({ postback }: { postback: ApiPostback }) {
   if (!postback.lastFiredAt) {
-    return <span className={styles.deliveryNever}>never fired</span>;
+    return (
+      <span className={styles.deliveryNever} data-label="last delivery">
+        never fired
+      </span>
+    );
   }
 
   const isOk =
@@ -53,7 +57,7 @@ function LastDelivery({ postback }: { postback: ApiPostback }) {
     postback.lastStatus !== null ? `HTTP ${postback.lastStatus}` : (postback.lastError ?? 'failed');
 
   return (
-    <span className={styles.deliveryCell} title={postback.lastError ?? undefined}>
+    <span className={styles.deliveryCell} data-label="last delivery" title={postback.lastError ?? undefined}>
       <span className={`${styles.testResult} ${isOk ? styles.testOk : styles.testFail}`}>{label}</span>
       <span className={styles.deliveryMoment}>{formatMoment(postback.lastFiredAt)}</span>
     </span>
@@ -98,17 +102,17 @@ function PostbackRow({
 }) {
   return (
     <div className={`${table.row} ${table.rowHover} ${postback.isActive ? '' : styles.rowInactive}`}>
-      <span className={styles.nameCell}>
+      <span className={styles.nameCell} data-cell="main">
         <span className={table.cellTitle}>{postback.name}</span>
       </span>
-      <span className={styles.templateCell} title={postback.urlTemplate}>
+      <span className={styles.templateCell} data-label="template" data-cell="wide" title={postback.urlTemplate}>
         {postback.urlTemplate}
       </span>
-      <span className={styles.eventsCell}>
+      <span className={styles.eventsCell} data-label="events">
         {postback.onJoin ? <span className={ui.badgePositive}>join</span> : null}
         {postback.onLeave ? <span className={ui.badgeWarning}>leave</span> : null}
       </span>
-      <span>
+      <span data-cell="switch">
         <button
           type="button"
           role="switch"
@@ -120,7 +124,7 @@ function PostbackRow({
         />
       </span>
       <LastDelivery postback={postback} />
-      <span className={styles.actionsCell}>
+      <span className={styles.actionsCell} data-cell="actions">
         {testResult ? <TestResultLabel result={testResult} /> : null}
         {canMutate ? (
           <>
@@ -295,7 +299,7 @@ export function PostbacksView({ channelId }: { channelId: string }) {
         )
       ) : (
         <div className={table.scroll}>
-          <div className={table.table} style={TABLE_STYLE}>
+          <div className={`${table.table} ${table.stack}`} style={TABLE_STYLE}>
             <div className={table.headRow}>
               <span>name</span>
               <span>template</span>

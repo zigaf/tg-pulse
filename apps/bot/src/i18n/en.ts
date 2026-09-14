@@ -83,7 +83,17 @@ export const en = {
     upgrade: '⭐ Upgrade',
     billing: '💳 Billing',
     pay: '⭐ Pay with Stars',
+    settings: '⚙️ Settings',
+    teamBranding: '👥 Team & branding',
+    integrations: 'Integrations',
+    postbacks: 'Postbacks',
+    shareReport: 'Share report',
+    /** One per channel on the settings card; the title is what the user recognises. */
+    channelSettings: (title: string) => `⚙️ ${title}`,
   },
+
+  /** Chat menu button next to the message field. Telegram caps it at 20 characters. */
+  menuButton: 'Open TGPulse',
 
   commands: {
     start: 'What TGPulse does and quick actions',
@@ -95,6 +105,7 @@ export const en = {
     notifications: 'Instant join and leave alerts',
     upgrade: 'Plans and Telegram Stars payment',
     billing: 'Your plan, renewal date and payments',
+    settings: 'Integrations, team, billing and branding',
     language: 'Switch the bot language',
     help: 'How it works and FAQ',
   },
@@ -137,6 +148,7 @@ export const en = {
       '/notifications toggles instant join and leave alerts',
       '/upgrade shows the plans and pays with Telegram Stars',
       '/billing shows your plan, renewal date and payments',
+      '/settings opens integrations, team, billing and branding without leaving Telegram',
       '/language switches between English and Russian',
     ],
     faqTitle: 'FAQ',
@@ -145,6 +157,15 @@ export const en = {
       'How do I disconnect a channel? Remove the bot from the channel admins. Tracking stops right away.',
     ],
     dashboard: (url: string) => `Dashboard: ${url}`,
+  },
+
+  settings: {
+    title: 'Settings',
+    intro: 'Integrations, postbacks, team, branding and billing open right here in Telegram, no browser needed.',
+    channelsTitle: 'Per channel',
+    channelsHint: 'Ad-platform integrations and postbacks are set up per channel. Tap a channel to open its settings.',
+    noChannels: 'Once a channel is connected, its integrations and postbacks appear here.',
+    footer: 'Everything you change is saved instantly and applies to the bot as well.',
   },
 
   language: {

@@ -1,4 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { headers } from 'next/headers';
 import { SignJWT, jwtVerify } from 'jose';
 import { getPrisma, Prisma, type User } from '@tgpulse/db';
 import { requireEnv } from './env';
@@ -74,6 +75,42 @@ export async function consumeLoginNonce(hash: string): Promise<boolean> {
   return true;
 }
 
+/** Profile fields shared by the Login Widget and Mini App payloads. */
+export interface TelegramProfile {
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  photoUrl?: string;
+}
+
+/**
+ * Upsert the user by Telegram id (refreshing the profile) and, on first sign-in,
+ * create a personal workspace so every user lands somewhere. Shared by the
+ * widget login and the Mini App login so both paths yield the same account.
+ */
+export async function upsertTelegramUser(tgId: bigint, profile: TelegramProfile): Promise<User> {
+  const prisma = getPrisma();
+  const user = await prisma.user.upsert({
+    where: { tgId },
+    update: profile,
+    create: { tgId, ...profile },
+  });
+
+  const membership = await prisma.membership.findFirst({
+    where: { userId: user.id },
+    select: { workspaceId: true },
+  });
+  if (!membership) {
+    await prisma.workspace.create({
+      data: {
+        name: profile.firstName ?? profile.username ?? 'My workspace',
+        members: { create: { userId: user.id, role: 'OWNER' } },
+      },
+    });
+  }
+  return user;
+}
+
 function sessionKey(): Uint8Array {
   return new TextEncoder().encode(requireEnv('SESSION_SECRET'));
 }
@@ -96,10 +133,50 @@ export async function readSessionJwt(token: string): Promise<string | null> {
   }
 }
 
+/** Token from an `Authorization: Bearer <jwt>` header; null for any other shape. */
+function bearerToken(authorizationHeader: string | null | undefined): string | null {
+  const match = authorizationHeader?.trim().match(/^bearer\s+(\S+)$/i);
+  return match?.[1] ?? null;
+}
+
+/**
+ * Resolve a session userId from the two places a token may travel: the bearer
+ * header (Mini App mode keeps the JWT in memory, cookies are not available
+ * inside Telegram's WebView) and the cookie (regular browser session).
+ * A present-but-invalid bearer token does not lock out a valid cookie.
+ * Pure over its inputs so it is testable without the Next runtime.
+ */
+export async function resolveSessionToken(
+  cookieToken: string | undefined,
+  authorizationHeader: string | null | undefined,
+): Promise<string | null> {
+  const bearer = bearerToken(authorizationHeader);
+  if (bearer) {
+    const userId = await readSessionJwt(bearer);
+    if (userId) return userId;
+  }
+  if (!cookieToken) return null;
+  return readSessionJwt(cookieToken);
+}
+
+/**
+ * Current request's Authorization header, or null when there is no request
+ * scope (unit tests, build-time evaluation) — `headers()` throws there and the
+ * cookie path must keep working unchanged.
+ */
+async function currentAuthorizationHeader(): Promise<string | null> {
+  try {
+    return (await headers()).get('authorization');
+  } catch {
+    return null;
+  }
+}
+
 export async function getSessionUserId(cookies: CookieReader): Promise<string | null> {
-  const token = cookies.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-  return readSessionJwt(token);
+  const cookieToken = cookies.get(SESSION_COOKIE)?.value;
+  const authorization = await currentAuthorizationHeader();
+  if (!cookieToken && !authorization) return null;
+  return resolveSessionToken(cookieToken, authorization);
 }
 
 export async function getSessionUser(cookies: CookieReader): Promise<User | null> {

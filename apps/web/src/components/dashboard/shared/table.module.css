@@ -126,3 +126,150 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* ---------- phones ---------- */
+
+@media (max-width: 640px) {
+  /* Tables that stay tabular scroll inside their own box. Two "local" covers ride
+     with the content and hide the fixed edge glows once that edge is reached, so the
+     glow only shows where there is more to see. */
+  .scroll {
+    margin: 0;
+    padding: 0 0 0.45rem;
+    scrollbar-width: thin;
+    scrollbar-color: oklch(45% 0.04 290 / 0.55) transparent;
+    -webkit-overflow-scrolling: touch;
+    background:
+      linear-gradient(90deg, var(--color-bg) 50%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(270deg, var(--color-bg) 50%, transparent) right / 40px 100% no-repeat local,
+      linear-gradient(90deg, oklch(62% 0.21 288 / 0.35), transparent) left / 18px 100% no-repeat scroll,
+      linear-gradient(270deg, oklch(62% 0.21 288 / 0.35), transparent) right / 18px 100% no-repeat scroll;
+  }
+
+  .scroll::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .scroll::-webkit-scrollbar-thumb {
+    background: oklch(45% 0.04 290 / 0.55);
+    border-radius: 2px;
+  }
+
+  /* Stacked cards never scroll sideways, so no edge glow and no scrollbar gutter. */
+  .scroll:has(.stack) {
+    background: none;
+    padding-bottom: 0;
+  }
+
+  .headRow {
+    align-items: center;
+  }
+
+  .sortBtn {
+    min-height: 40px;
+  }
+
+  /* Opt-in: rows become stacked cards on a six-column grid. Cells label themselves
+     with data-label; data-cell picks the span (main | wide | third | switch | actions). */
+  .stack {
+    min-width: 0;
+    gap: 0.55rem;
+  }
+
+  .stack .headRow {
+    display: none;
+  }
+
+  .stack .row {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    align-items: start;
+    gap: 0.7rem 0.75rem;
+    padding: 0.85rem 0.9rem 0.8rem;
+    border-color: var(--color-border);
+  }
+
+  .stack .row > * {
+    grid-column: span 3;
+    min-width: 0;
+  }
+
+  .stack .row > [data-cell='third'] {
+    grid-column: span 2;
+  }
+
+  .stack .row > [data-cell='main'],
+  .stack .row > [data-cell='wide'],
+  .stack .row > [data-cell='actions'] {
+    grid-column: 1 / -1;
+  }
+
+  .stack .row > [data-cell='main'] {
+    order: -2;
+  }
+
+  /* A toggle shares the title line: title takes four columns, switch the last two. */
+  .stack .row:has([data-cell='switch']) > [data-cell='main'] {
+    grid-column: 1 / span 4;
+  }
+
+  .stack .row > [data-cell='switch'] {
+    grid-column: span 2;
+    order: -1;
+    display: flex;
+    justify-content: flex-end;
+    align-self: center;
+  }
+
+  .stack .row > [data-label] {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem 0.45rem;
+    font-size: 0.8rem;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .stack .row > [data-label] > * {
+    min-width: 0;
+  }
+
+  .stack .row > [data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 100%;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.58rem;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .stack .row > [data-cell='actions'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.45rem;
+    border-top: 1px solid var(--color-border);
+    padding-top: 0.7rem;
+    margin-top: 0.1rem;
+  }
+
+  /* A row the caller may not act on renders an empty cell: no divider for it. */
+  .stack .row > [data-cell='actions']:empty {
+    display: none;
+  }
+
+  .stack .row > [data-cell='actions'] > button {
+    flex: 1 1 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.8rem;
+  }
+}

@@ -38,7 +38,7 @@ export function HealthTable({ health }: { health: IntegrationsHealth }) {
       </div>
 
       <div className={table.scroll}>
-        <div className={table.table} style={TABLE_STYLE}>
+        <div className={`${table.table} ${table.stack}`} style={TABLE_STYLE}>
           <div className={table.headRow}>
             <span>platform</span>
             <span className={table.alignRight}>sent</span>
@@ -51,18 +51,22 @@ export function HealthTable({ health }: { health: IntegrationsHealth }) {
             const descriptor = AD_PROVIDERS[row.provider];
             return (
               <div key={row.integrationId} className={`${table.row} ${row.isActive ? '' : styles.rowInactive}`}>
-                <span className={table.cellMain}>
+                <span className={table.cellMain} data-cell="main">
                   <span className={table.cellTitle}>{descriptor ? descriptor.name : row.provider}</span>
                 </span>
-                <span className={table.numStrong}>{formatNumber(row.uploads.sent)}</span>
-                <span className={table.num}>{formatNumber(row.uploads.pending)}</span>
-                <span className={`${table.num} ${row.uploads.failed > 0 ? table.bad : ''}`}>
+                <span className={table.numStrong} data-label="sent" data-cell="third">{formatNumber(row.uploads.sent)}</span>
+                <span className={table.num} data-label="queued" data-cell="third">{formatNumber(row.uploads.pending)}</span>
+                <span
+                  className={`${table.num} ${row.uploads.failed > 0 ? table.bad : ''}`}
+                  data-label="failed"
+                  data-cell="third"
+                >
                   {formatNumber(row.uploads.failed)}
                 </span>
-                <span className={table.cellSub}>{formatMoment(row.lastSyncAt)}</span>
+                <span className={table.cellSub} data-label="last sync" data-cell="wide">{formatMoment(row.lastSyncAt)}</span>
 
                 {row.lastError ? (
-                  <p className={styles.healthError} title={row.lastError}>
+                  <p className={styles.healthError} data-cell="wide" title={row.lastError}>
                     {row.lastError}
                   </p>
                 ) : null}

@@ -182,3 +182,22 @@
     background-position: -80% 0;
   }
 }
+
+/* ---------- phones ---------- */
+
+@media (max-width: 640px) {
+  .btn {
+    min-height: 40px;
+    padding: 0.55rem 1rem;
+  }
+
+  /* 16px keeps iOS from zooming the page when a field gets focus. */
+  .input {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .label {
+    font-size: 0.74rem;
+  }
+}

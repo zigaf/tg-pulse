@@ -12,6 +12,7 @@ export const CB = {
   goStats: 'go:stats',
   goFraud: 'go:fraud',
   goLanguage: 'go:lang',
+  goSettings: 'go:settings',
   close: 'ui:close',
   langSet: (lang: Lang) => `lang:set:${lang}`,
   nlPick: (channelId: string) => `nl:pick:${channelId}`,
@@ -40,6 +41,47 @@ export const MARK_TODO = '○';
 function addToChannelUrl(botUsername: string): string {
   return `https://t.me/${botUsername}?startchannel&admin=invite_users`;
 }
+
+/** Path prefix of the dashboard inside the web app; DASHBOARD_URL normally ends with it. */
+const APP_PREFIX = '/app';
+
+export type AppLinkKind = 'web_app' | 'url';
+
+export interface AppLink {
+  url: string;
+  /** web_app opens the Mini App inside Telegram; url is the fallback for non-https dev URLs. */
+  kind: AppLinkKind;
+}
+
+/**
+ * Absolute dashboard URL for a path relative to /app ('' is the channel list).
+ * Telegram rejects non-https web_app URLs, so local http dashboards get a plain link button.
+ */
+export function appLinkFor(dashboardUrl: string, path: string): AppLink {
+  const trimmed = dashboardUrl.endsWith('/') ? dashboardUrl.slice(0, -1) : dashboardUrl;
+  const base = trimmed.endsWith(APP_PREFIX) ? trimmed : `${trimmed}${APP_PREFIX}`;
+  const url = `${base}${path}`;
+  const kind: AppLinkKind = /^https:\/\//i.test(url) ? 'web_app' : 'url';
+  return { url, kind };
+}
+
+/** Button that opens a dashboard page: as a Mini App when possible, as a link otherwise. */
+export function openAppButton(keyboard: InlineKeyboard, text: string, path: string): InlineKeyboard {
+  const link = appLinkFor(config.dashboardUrl, path);
+  return link.kind === 'web_app' ? keyboard.webApp(text, link.url) : keyboard.url(text, link.url);
+}
+
+/** Web routes of the dashboard, mirrored from apps/web so both sides agree on the URL shape. */
+export const appPaths = {
+  home: '',
+  team: (workspaceId: string | null) =>
+    workspaceId ? `/team?ws=${encodeURIComponent(workspaceId)}` : '/team',
+  billing: (workspaceId: string | null) =>
+    workspaceId ? `/billing?ws=${encodeURIComponent(workspaceId)}` : '/billing',
+  integrations: (channelId: string) => `/channels/${encodeURIComponent(channelId)}/integrations`,
+  postbacks: (channelId: string) => `/channels/${encodeURIComponent(channelId)}/postbacks`,
+  share: (channelId: string) => `/channels/${encodeURIComponent(channelId)}/share`,
+} as const;
 
 /**
  * Trailing navigation row: one level back where there is one, plus a way out.
@@ -70,18 +112,33 @@ export function startMenu(dict: Dict, botUsername: string, progress: OnboardingP
     keyboard.text(dict.buttons.myStats, CB.goStats).text(dict.buttons.createLink, CB.goNewlink).row();
   }
 
-  return keyboard
-    .url(dict.buttons.openDashboard, config.dashboardUrl)
-    .text(dict.buttons.language, CB.goLanguage);
+  return openAppButton(keyboard, dict.buttons.openDashboard, appPaths.home).text(
+    dict.buttons.language,
+    CB.goLanguage,
+  );
 }
 
 export function helpMenu(dict: Dict): InlineKeyboard {
-  return new InlineKeyboard()
-    .text(dict.buttons.createLink, CB.goNewlink)
-    .url(dict.buttons.openDashboard, config.dashboardUrl)
+  const keyboard = new InlineKeyboard().text(dict.buttons.createLink, CB.goNewlink);
+  return openAppButton(keyboard, dict.buttons.openDashboard, appPaths.home)
     .row()
+    .text(dict.buttons.settings, CB.goSettings)
     .text(dict.buttons.language, CB.goLanguage)
+    .row()
     .text(dict.buttons.close, CB.close);
+}
+
+/** /settings: everything that lives in the dashboard, opened without leaving Telegram. */
+export function settingsMenu(dict: Dict, workspaceId: string | null, channels: Channel[]): InlineKeyboard {
+  const keyboard = new InlineKeyboard();
+  openAppButton(keyboard, dict.buttons.openDashboard, appPaths.home).row();
+  openAppButton(keyboard, dict.buttons.teamBranding, appPaths.team(workspaceId));
+  openAppButton(keyboard, dict.buttons.billing, appPaths.billing(workspaceId)).row();
+  for (const channel of channels) {
+    const label = dict.buttons.channelSettings(channel.title);
+    openAppButton(keyboard, label, appPaths.integrations(channel.id)).row();
+  }
+  return navRow(keyboard, dict);
 }
 
 /** Empty state for every screen that needs at least one connected channel. */
@@ -102,11 +159,11 @@ export function languageMenu(dict: Dict, current: Lang): InlineKeyboard {
 }
 
 export function postCreateMenu(dict: Dict): InlineKeyboard {
-  return new InlineKeyboard()
+  const keyboard = new InlineKeyboard()
     .text(dict.buttons.createAnother, CB.goNewlink)
     .text(dict.buttons.viewStats, CB.goStats)
-    .row()
-    .url(dict.buttons.openDashboard, config.dashboardUrl);
+    .row();
+  return openAppButton(keyboard, dict.buttons.openDashboard, appPaths.home);
 }
 
 export function cancelMenu(dict: Dict): InlineKeyboard {
@@ -167,7 +224,12 @@ export function channelMenu(dict: Dict, channelId: string): InlineKeyboard {
     .text(dict.buttons.newLink, CB.nlPick(channelId))
     .text(dict.buttons.links, CB.chLinks(channelId))
     .row()
-    .text(dict.buttons.fraudCheck, CB.frChannel(channelId));
+    .text(dict.buttons.fraudCheck, CB.frChannel(channelId))
+    .row();
+  // Dashboard-only features for this channel, opened as a Mini App.
+  openAppButton(keyboard, dict.buttons.integrations, appPaths.integrations(channelId));
+  openAppButton(keyboard, dict.buttons.postbacks, appPaths.postbacks(channelId));
+  openAppButton(keyboard, dict.buttons.shareReport, appPaths.share(channelId));
   return navRow(keyboard, dict, CB.chList(0));
 }
 
@@ -177,9 +239,8 @@ export function backToChannelMenu(dict: Dict, channelId: string): InlineKeyboard
 
 /** /stats is a single-level screen: nothing to go back to, only a way out. */
 export function statsMenu(dict: Dict): InlineKeyboard {
-  return new InlineKeyboard()
-    .text(dict.buttons.newLink, CB.goNewlink)
-    .url(dict.buttons.openDashboard, config.dashboardUrl)
+  const keyboard = new InlineKeyboard().text(dict.buttons.newLink, CB.goNewlink);
+  return openAppButton(keyboard, dict.buttons.openDashboard, appPaths.home)
     .row()
     .text(dict.buttons.close, CB.close);
 }
@@ -219,9 +280,8 @@ export function plansMenu(dict: Dict, options: PlanOption[], workspaceId: string
 }
 
 export function billingMenu(dict: Dict): InlineKeyboard {
-  return new InlineKeyboard()
-    .text(dict.buttons.upgrade, CB.goUpgrade)
-    .url(dict.buttons.openDashboard, config.dashboardUrl)
+  const keyboard = new InlineKeyboard().text(dict.buttons.upgrade, CB.goUpgrade);
+  return openAppButton(keyboard, dict.buttons.openDashboard, appPaths.home)
     .row()
     .text(dict.buttons.close, CB.close);
 }
@@ -237,7 +297,7 @@ export function upsellMenu(dict: Dict): InlineKeyboard {
 }
 
 export function paidMenu(dict: Dict): InlineKeyboard {
-  return new InlineKeyboard().url(dict.buttons.openDashboard, config.dashboardUrl);
+  return openAppButton(new InlineKeyboard(), dict.buttons.openDashboard, appPaths.home);
 }
 
 export function notificationsMenu(

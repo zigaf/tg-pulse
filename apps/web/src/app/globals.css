@@ -104,3 +104,16 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Touch: no double-tap zoom on controls, no grey flash on tap. */
+@media (max-width: 640px) {
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  [role='button'] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}

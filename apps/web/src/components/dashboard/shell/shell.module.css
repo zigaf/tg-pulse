@@ -210,8 +210,12 @@
 /* ---------- mobile: sidebar becomes top tabs ---------- */
 
 @media (max-width: 860px) {
+  /* Explicit rows: with min-height on the grid, two auto rows would share the free
+     space and the header would grow whenever the page is short. */
   .shell {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    align-content: start;
   }
 
   .sidebar {
@@ -298,5 +302,110 @@
 
   .content {
     padding: 1.2rem 1rem 3rem;
+  }
+}
+
+/* ---------- phones: two-row header, identity above scrolling tabs ---------- */
+
+@media (max-width: 640px) {
+  .sidebar {
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+    padding: 0.45rem 0.75rem 0;
+  }
+
+  .sidebarTop {
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 0.35rem;
+  }
+
+  /* Icon-only back control; the text stays for assistive tech. */
+  .backLink {
+    flex: none;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    gap: 0;
+    font-size: 0;
+  }
+
+  .backLink svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .channelBlock {
+    flex: 1 1 0;
+    gap: 0.5rem;
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.78rem;
+  }
+
+  .channelText {
+    display: flex;
+    gap: 0.05rem;
+  }
+
+  .channelTitle {
+    font-size: 0.8rem;
+  }
+
+  .channelMeta {
+    font-size: 0.62rem;
+  }
+
+  .planRow {
+    flex: none;
+  }
+
+  .signOut {
+    flex: none;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+
+  /* Second row: edge-to-edge tab strip; the fade says there is more to the right. */
+  .nav {
+    flex: 1 1 100%;
+    order: 10;
+    gap: 0.1rem;
+    margin: 0 -0.75rem;
+    padding: 0 0.75rem;
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 40px), transparent);
+  }
+
+  /* Trailing room so the last tab can scroll clear of the fade. */
+  .nav::after {
+    content: '';
+    flex: 0 0 40px;
+  }
+
+  .navItem {
+    min-height: 44px;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.8rem;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+
+  .navItemActive::before {
+    left: 0.7rem;
+    right: 0.7rem;
+  }
+
+  .navDivider {
+    margin: 0.7rem 0.3rem;
+  }
+
+  .content {
+    padding: 1rem 0.9rem 3.5rem;
   }
 }

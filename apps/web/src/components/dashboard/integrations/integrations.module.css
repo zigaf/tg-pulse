@@ -310,3 +310,32 @@
     max-width: 55%;
   }
 }
+
+/* ---------- phones ---------- */
+
+@media (max-width: 640px) {
+  .cardFoot button {
+    min-height: 40px;
+    font-size: 0.78rem;
+  }
+
+  .healthHead {
+    flex-wrap: wrap;
+    gap: 0.2rem 0.8rem;
+  }
+
+  .healthError {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  /* Sheet mode: the shared modal rules position it; only the height cap differs. */
+  .connectModal {
+    width: 100%;
+    max-height: 100dvh;
+  }
+
+  .setupSteps {
+    margin-bottom: 1rem;
+  }
+}

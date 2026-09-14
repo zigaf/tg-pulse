@@ -1,6 +1,5 @@
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { getPrisma } from '@tgpulse/db';
 import {
   SESSION_COOKIE,
   SESSION_MAX_AGE_SECONDS,
@@ -8,6 +7,7 @@ import {
   createSessionJwt,
   sessionCookieOptions,
   toUserDto,
+  upsertTelegramUser,
   verifyTelegramLogin,
 } from '@/server/auth';
 import { handleRouteError, jsonError, jsonOk, parseOrThrow, readJsonBody } from '@/server/http';
@@ -50,31 +50,12 @@ export async function POST(req: NextRequest) {
       return jsonError(401, 'This login has already been used. Sign in again.');
     }
 
-    const prisma = getPrisma();
-    const profile = {
+    const user = await upsertTelegramUser(BigInt(String(body.id)), {
       username: optionalString(body.username),
       firstName: optionalString(body.first_name),
       lastName: optionalString(body.last_name),
       photoUrl: optionalString(body.photo_url),
-    };
-    const user = await prisma.user.upsert({
-      where: { tgId: BigInt(String(body.id)) },
-      update: profile,
-      create: { tgId: BigInt(String(body.id)), ...profile },
     });
-
-    const membership = await prisma.membership.findFirst({
-      where: { userId: user.id },
-      select: { workspaceId: true },
-    });
-    if (!membership) {
-      await prisma.workspace.create({
-        data: {
-          name: profile.firstName ?? profile.username ?? 'My workspace',
-          members: { create: { userId: user.id, role: 'OWNER' } },
-        },
-      });
-    }
 
     const token = await createSessionJwt(user.id);
     const res = jsonOk({ user: toUserDto(user) });

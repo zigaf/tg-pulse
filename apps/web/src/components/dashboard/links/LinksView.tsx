@@ -27,10 +27,14 @@ function shortUrl(url: string): string {
 
 function LandingCell({ views, clicks }: { views: number; clicks: number }) {
   if (views === 0 && clicks === 0) {
-    return <span className={styles.landingCell}>—</span>;
+    return (
+      <span className={styles.landingCell} data-label="landing">
+        —
+      </span>
+    );
   }
   return (
-    <span className={styles.landingCell} title="Pixel pageviews → outbound clicks">
+    <span className={styles.landingCell} data-label="landing" title="Pixel pageviews → outbound clicks">
       <span className={styles.landingViews}>{formatNumber(views)}</span>
       <span className={styles.landingArrow} aria-hidden="true">
         →
@@ -57,23 +61,31 @@ function LinkRow({
 }) {
   return (
     <div className={`${table.row} ${table.rowHover} ${link.isRevoked ? styles.rowRevoked : ''}`}>
-      <span className={styles.labelCell}>
+      <span className={styles.labelCell} data-cell="main">
         <span className={table.cellTitle}>{link.label}</span>
         {link.creative ? <span className={table.cellSub}>{link.creative}</span> : null}
       </span>
-      <span className={styles.urlCell}>
+      <span className={styles.urlCell} data-label="url" data-cell="wide">
         <span className={styles.url}>{shortUrl(link.url)}</span>
         <CopyButton text={link.url} />
       </span>
-      <span className={`${styles.buyerCell} ${link.buyer ? '' : styles.buyerEmpty}`}>
+      <span className={`${styles.buyerCell} ${link.buyer ? '' : styles.buyerEmpty}`} data-label="buyer" data-cell="wide">
         {link.buyer || 'unassigned'}
       </span>
-      <span className={table.num}>{formatNumber(link.clicks)}</span>
-      <span className={table.numStrong}>{formatNumber(link.joins)}</span>
-      <span className={table.num}>{formatNumber(link.leaves)}</span>
+      <span className={table.num} data-label="clicks" data-cell="third">
+        {formatNumber(link.clicks)}
+      </span>
+      <span className={table.numStrong} data-label="joins" data-cell="third">
+        {formatNumber(link.joins)}
+      </span>
+      <span className={table.num} data-label="leaves" data-cell="third">
+        {formatNumber(link.leaves)}
+      </span>
       <LandingCell views={link.pixelViews} clicks={link.pixelClicks} />
-      <span className={table.num}>{formatFullDate(link.createdAt)}</span>
-      <span className={styles.actionsCell}>
+      <span className={table.num} data-label="created">
+        {formatFullDate(link.createdAt)}
+      </span>
+      <span className={styles.actionsCell} data-cell="actions">
         <button type="button" className={styles.pixelBtn} onClick={() => onInstallPixel(link)}>
           Install pixel
         </button>
@@ -199,7 +211,7 @@ export function LinksView({ channelId }: { channelId: string }) {
         </div>
       ) : (
         <div className={table.scroll}>
-          <div className={table.table} style={TABLE_STYLE}>
+          <div className={`${table.table} ${table.stack}`} style={TABLE_STYLE}>
             <div className={table.headRow}>
               <span>label</span>
               <span>url</span>

@@ -8,6 +8,7 @@ import { normalizePlan } from '@/lib/billing';
 import { BOT_USERNAME, formatNumber } from '@/lib/format';
 import { PlanBadge } from '../shared/PlanBadge';
 import { EmptyState } from '../shared/States';
+import { useIsMiniApp } from '../shell/MiniAppBridge';
 import { teamHref } from '../team/team-href';
 import ui from '../shared/ui.module.css';
 import styles from './channels.module.css';
@@ -67,6 +68,8 @@ function NoChannels() {
 export function ChannelsHome({ me }: { me: MeData }) {
   const channels = me.workspaces.flatMap((workspace) => workspace.channels);
   const primaryWorkspace = me.workspaces[0];
+  // Inside Telegram the session is the Telegram account itself: signing out makes no sense.
+  const isTma = useIsMiniApp();
 
   const handleSignOut = async () => {
     await logout();
@@ -89,10 +92,12 @@ export function ChannelsHome({ me }: { me: MeData }) {
             <PlanBadge plan={normalizePlan(primaryWorkspace.plan)} workspaceId={primaryWorkspace.id} />
           ) : null}
           <span className={styles.userName}>{me.user.firstName}</span>
-          <button type="button" className={ui.btnGhost} onClick={() => void handleSignOut()}>
-            <SignOut size={15} />
-            Sign out
-          </button>
+          {isTma ? null : (
+            <button type="button" className={ui.btnGhost} onClick={() => void handleSignOut()}>
+              <SignOut size={15} />
+              Sign out
+            </button>
+          )}
         </div>
       </header>
 

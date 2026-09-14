@@ -6,6 +6,7 @@
  */
 
 import type { AdProvider } from './ad-providers';
+import { ensureTmaSession, isMiniApp, mergeAuthHeaders, refreshTmaSession } from './tma';
 
 export type ApiResult<T> =
   | { ok: true; data: T }
@@ -399,14 +400,40 @@ export function isUpgradeRequired(result: ApiResult<unknown>): boolean {
 /** Shape of the JSON envelope before it is narrowed into an ApiResult. */
 type ResponseBody<T> = { ok: true; data: T } | { ok: false; error?: string; upgrade?: boolean };
 
+/**
+ * fetch() that carries the Mini App bearer token and self-heals once on 401.
+ * Inside Telegram there is no session cookie, so every call carries the token from
+ * the initData exchange (lib/tma.ts); when the server rejects it (expired, secret
+ * rotated) initData is exchanged again and the call is retried exactly once.
+ * Outside Telegram the init is passed through and the cookie keeps doing the work.
+ * Throws like fetch on network failure; callers map that to an ApiResult.
+ */
+async function authorizedFetch(path: string, init?: RequestInit): Promise<Response> {
+  const token = isMiniApp() ? await ensureTmaSession() : null;
+  const response = await fetch(path, withBearer(init, token));
+  if (response.status !== 401 || !isMiniApp()) return response;
+
+  const fresh = await refreshTmaSession(token);
+  if (!fresh) return response;
+  return fetch(path, withBearer(init, fresh));
+}
+
+function withBearer(init: RequestInit | undefined, token: string | null): RequestInit {
+  const base: RequestInit = { credentials: 'same-origin', ...init };
+  return token ? { ...base, headers: mergeAuthHeaders(init?.headers, token) } : base;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {
   let response: Response;
   try {
-    response = await fetch(path, { credentials: 'same-origin', ...init });
+    response = await authorizedFetch(path, init);
   } catch {
     return { ok: false, error: 'Network error. Check your connection and retry.', envelope: false };
   }
+  return toApiResult<T>(response);
+}
 
+async function toApiResult<T>(response: Response): Promise<ApiResult<T>> {
   const body = (await response.json().catch(() => null)) as ResponseBody<T> | null;
   const isGate = response.status === PAYMENT_REQUIRED;
 
@@ -932,7 +959,7 @@ export async function downloadExport(
 
   let response: Response;
   try {
-    response = await fetch(url, { credentials: 'same-origin' });
+    response = await authorizedFetch(url);
   } catch {
     return { ok: false, error: 'Network error. Check your connection and retry.', envelope: false };
   }

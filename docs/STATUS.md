@@ -65,6 +65,18 @@ CSV exports for subscribers, links and events. Buyer tag on links with a compari
 manager. Landing-post links redirect straight to a channel post, validated against the channel's own
 identity so they cannot become an open redirect.
 
+**Mini App: every setting from inside Telegram (2026-09-14).** The dashboard opens as a Telegram Mini
+App, so integrations, postbacks, links with UTM, share links, API keys, team, invites, branding and
+billing are all reachable without leaving the chat. Entry points: the chat menu button, `/settings`,
+and web_app buttons on `/start`, `/help` and the channel card (requires an https `DASHBOARD_URL`;
+on http they degrade to plain links). Auth: `POST /api/auth/tma` verifies `initData` per the Mini
+Apps spec (one-hour freshness, no nonce since initData is constant per open session) and returns
+the session JWT in the body; every API route accepts it as `Authorization: Bearer` next to the
+cookie, because Telegram Web frames Mini Apps and third-party cookies are unreliable there. CSP for
+`/app/*` allows `frame-ancestors https://web.telegram.org`; landing and API keep `'none'`. Settings
+surfaces got a 375px pass: tables stack into cards, modals become bottom sheets, tap targets are
+40px+. Spec: docs/superpowers/specs/2026-09-14-telegram-mini-app-settings-design.md.
+
 **Engineering hardening (2026-08-21).** Prisma switched from `db push` to real migrations: `0_init`
 baseline plus `scripts/migrate-deploy.mjs` (deploy, baseline-on-P3005, retry) run by `railway:start`.
 GitHub Actions CI: typecheck, vitest, both builds. Sentry wired into bot (grammY `bot.catch`, Fastify
